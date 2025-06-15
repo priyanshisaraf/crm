@@ -23,7 +23,7 @@ export default function SettingsPage() {
       <div className="max-w-3xl mx-auto bg-white rounded-xl shadow-md p-6">
         <h1 className="text-2xl font-bold text-gray-800 mb-4">Settings</h1>
 
-        <div className="flex flex-col gap-6">
+        <div className="flex flex-col gap-5">
           {/* Logout for all users */}
           <div className="flex justify-between items-center border-b pb-4">
             <p className="text-gray-700 text-sm">

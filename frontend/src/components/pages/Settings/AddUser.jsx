@@ -58,7 +58,7 @@ export default function AddUser() {
     : ["engineer"];
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50 px-4">
+    <div className="flex flex-col items-center bg-gray-50 px-4 py-8">
       <div className="w-full max-w-md bg-white p-6 rounded-xl shadow">
         <h2 className="text-2xl font-semibold text-center text-purple-700 mb-4">
           Add New User
