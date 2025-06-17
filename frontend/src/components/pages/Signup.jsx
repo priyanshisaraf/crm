@@ -1,89 +1,109 @@
 import React, { useState } from "react";
-import { useNavigate, useLocation, Link } from "react-router-dom";
-import { signInWithEmailAndPassword, signInWithPopup, GoogleAuthProvider} from "firebase/auth";
-import { collection, query, where, getDocs } from "firebase/firestore";
+import {  Link } from "react-router-dom";
+import {
+  createUserWithEmailAndPassword,
+  signOut,
+  signInWithPopup,
+  GoogleAuthProvider,
+} from "firebase/auth";
+import {
+  collection,
+  query,
+  where,
+  getDocs,
+  setDoc,
+  deleteDoc,
+  doc,
+} from "firebase/firestore";
 import { auth, db } from "../../firebase/firebaseConfig";
 
-import {
-  setDoc,
-  doc
-} from "firebase/firestore";
-export default function Login() {
-  const navigate = useNavigate();
-  const location = useLocation();
+export default function Signup() {
+  //const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
 
-  const handleLogin = async (e) => {
+  const handleSignup = async (e) => {
     e.preventDefault();
     setError("");
 
     try {
-      await signInWithEmailAndPassword(auth, email, password);
-      navigate("/dashboard");
-    } catch (err) {
-      console.error(err);
-      if (
-        err.code === "auth/user-not-found" ||
-        err.code === "auth/wrong-password" ||
-        err.code === "auth/invalid-credential"
-      ) {
-        setError("Invalid email or password.");
-      } else if (err.code === "auth/too-many-requests") {
-        setError("Too many failed attempts. Try again later.");
-      } else {
-        setError("Something went wrong. Please try again.");
+      const q = query(
+        collection(db, "users"),
+        where("email", "==", email),
+        where("isRegistered", "==", false)
+      );
+      const snapshot = await getDocs(q);
+
+      if (snapshot.empty) {
+        setError("Unauthorized or already registered.");
+        return;
       }
+
+      const preApprovedDoc = snapshot.docs[0];
+      const role = preApprovedDoc.data().role;
+
+      const userCred = await createUserWithEmailAndPassword(auth, email, password);
+      const userDocRef = doc(db, "users", userCred.user.uid);
+
+      await setDoc(userDocRef, {
+        uid: userCred.user.uid,
+        email: userCred.user.email,
+        isRegistered: true,
+        role,
+      }, { merge: true });
+
+      await userCred.user.getIdToken(true);
+      window.location.href = "/dashboard";
+
+    } catch (err) {
+      console.error("Signup error:", err);
+      setError("Signup failed. Please try again.");
     }
   };
 
   const handleGoogleSignIn = async () => {
-  try {
-    const provider = new GoogleAuthProvider();
-    const result = await signInWithPopup(auth, provider);
-    const email = result.user.email;
+    try {
+      const provider = new GoogleAuthProvider();
+      const result = await signInWithPopup(auth, provider);
+      const email = result.user.email;
 
-    // Check if user was pre-approved
-    const q = query(collection(db, "users"), where("email", "==", email));
-    const snapshot = await getDocs(q);
+      const q = query(
+        collection(db, "users"),
+        where("email", "==", email),
+        where("isRegistered", "==", false)
+      );
+      const snapshot = await getDocs(q);
 
-    if (snapshot.empty) {
-      setError("This Google account is not pre-approved.");
-      return;
-    }
+      if (snapshot.empty) {
+        setError("This Google account is not pre-approved.");
+        await signOut(auth);
+        return;
+      }
 
-    const preApprovedDoc = snapshot.docs[0];
-    const data = preApprovedDoc.data();
+      const preApprovedDoc = snapshot.docs[0];
+      const role = preApprovedDoc.data().role;
 
-    // Mark them as registered (if not already)
-    if (!data.isRegistered) {
-      await setDoc(preApprovedDoc.ref, {
+      const userDocRef = doc(db, "users", result.user.uid);
+      await setDoc(userDocRef, {
         uid: result.user.uid,
         email: result.user.email,
         isRegistered: true,
-        role: data.role,
-      }, { merge: true });
+        role,
+      });
+
+      // Delete pre-approved entry to avoid duplicates
+      await deleteDoc(preApprovedDoc.ref);
+
+      await result.user.getIdToken(true);
+      window.location.href = "/dashboard";
+
+
+    } catch (err) {
+      console.error("Google sign-up error:", err);
+      setError("Google sign-in failed.");
     }
-
-    // Always write final doc to users/{uid}
-    const userDocRef = doc(db, "users", result.user.uid);
-    await setDoc(userDocRef, {
-      uid: result.user.uid,
-      email: result.user.email,
-      isRegistered: true,
-      role: data.role,
-    }, { merge: true });
-
-    // ✅ Now safely navigate
-    navigate("/dashboard");
-
-  } catch (err) {
-    console.error("Google sign-in error:", err);
-    setError("Google sign-in failed. Please try again.");
-  }
-};
-
+  };
 
   return (
     <div className="flex flex-col justify-center items-center min-h-screen bg-white px-4">
@@ -92,13 +112,9 @@ export default function Login() {
       </div>
 
       <div className="w-full max-w-md bg-white border border-gray-200 rounded-2xl shadow-md p-8">
-        <h2 className="text-2xl font-bold text-center text-gray-800 mb-6">Log in</h2>
+        <h2 className="text-2xl font-bold text-center text-gray-800 mb-6">Create an Account</h2>
 
-        {location.state?.fromSignup && (
-          <p className="text-green-600 text-sm mb-4">✅ Signup successful. Please log in.</p>
-        )}
-
-        <form onSubmit={handleLogin} className="space-y-4">
+        <form onSubmit={handleSignup} className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-600 mb-1">Email Address</label>
             <input
@@ -131,7 +147,7 @@ export default function Login() {
             type="submit"
             className="cursor-pointer w-full bg-blue-600 text-white py-2 rounded-md hover:bg-blue-700 font-semibold transition"
           >
-            Log in
+            Sign Up
           </button>
         </form>
 
@@ -150,8 +166,8 @@ export default function Login() {
         </button>
 
         <p className="mt-6 text-center text-sm text-gray-600">
-          Don&apos;t have an account?{" "}
-          <Link to="/signup" className="text-purple-600 font-medium hover:underline">Sign up</Link>
+          Already have an account?{" "}
+          <Link to="/login" className="text-purple-600 font-medium hover:underline">Log in</Link>
         </p>
       </div>
     </div>
