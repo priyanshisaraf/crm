@@ -12,9 +12,11 @@ const MyJobs = () => {
       {
         id: "mock-001",
         customerName: "Amit Sharma",
-        status: "Pending",
+        status: "Not inspected",
         date: "2025-06-14",
         notes: "Needs urgent attention",
+        spares: "",
+        charges: "",
         photoURL: ""
       },
       {
@@ -23,6 +25,8 @@ const MyJobs = () => {
         status: "In Progress",
         date: "2025-06-12",
         notes: "Part replaced",
+        spares: "Compressor",
+        charges: "1200",
         photoURL: ""
       },
       {
@@ -31,6 +35,8 @@ const MyJobs = () => {
         status: "Completed",
         date: "2025-06-10",
         notes: "Job done successfully",
+        spares: "",
+        charges: "2200",
         photoURL: ""
       }
     ];
@@ -57,13 +63,13 @@ const MyJobs = () => {
         )
       );
       setUploading(false);
-    }, 1000); // Simulated upload delay
+    }, 1000);
   };
 
-  const updateNotes = (id, newNote) => {
+  const updateField = (id, field, value) => {
     setJobs(prevJobs =>
       prevJobs.map(job =>
-        job.id === id ? { ...job, notes: newNote } : job
+        job.id === id ? { ...job, [field]: value } : job
       )
     );
   };
@@ -82,8 +88,9 @@ const MyJobs = () => {
         className="mb-4 p-2 border rounded"
       >
         <option value="All">All</option>
-        <option value="Pending">Pending</option>
+        <option value="Not inspected">Not inspected</option>
         <option value="In Progress">In Progress</option>
+        <option value="Approval Pending">Approval Pending</option>
         <option value="Completed">Completed</option>
       </select>
 
@@ -154,9 +161,26 @@ const MyJobs = () => {
             <label className="block mt-4">Remarks:</label>
             <textarea
               value={job.notes}
-              onChange={(e) => updateNotes(job.id, e.target.value)}
+              onChange={(e) => updateField(job.id, 'notes', e.target.value)}
               className="border p-2 w-full mt-1 rounded"
             />
+
+            <label className="block mt-4">Spares Required:</label>
+            <input
+              type="text"
+              value={job.spares || ''}
+              onChange={(e) => updateField(job.id, 'spares', e.target.value)}
+              className="border p-2 w-full mt-1 rounded"
+            />
+
+            <label className="block mt-4">Service Charges:</label>
+            <input
+              type="number"
+              value={job.charges || ''}
+              onChange={(e) => updateField(job.id, 'charges', e.target.value)}
+              className="border p-2 w-full mt-1 rounded"
+            />
+            <p className="text-sm text-gray-600 mt-1">GST extra as applicable</p>
           </div>
         ))
       )}
