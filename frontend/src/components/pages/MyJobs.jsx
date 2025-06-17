@@ -94,10 +94,12 @@ const MyJobs = () => {
           <div
             key={job.id}
             className={`border p-4 rounded mb-4 shadow-md transition-all duration-300 ${
-              job.status === "Pending"
+              job.status === "Not inspected"
                 ? "bg-red-100 border-red-400"
                 : job.status === "In Progress"
                 ? "bg-yellow-100 border-yellow-400"
+                : job.status === "Approval Pending"
+                ? "bg-blue-100 border-blue-400"
                 : job.status === "Completed"
                 ? "bg-green-100 border-green-400"
                 : "bg-gray-100 border-gray-300"
@@ -111,10 +113,12 @@ const MyJobs = () => {
               <strong>Status:</strong>{" "}
               <span
                 className={`font-semibold ${
-                  job.status === "Pending"
+                  job.status === "Not inspected"
                     ? "text-red-600"
                     : job.status === "In Progress"
                     ? "text-yellow-700"
+                    : job.status === "Approval Pending"
+                    ? "text-blue-700"
                     : job.status === "Completed"
                     ? "text-green-600"
                     : "text-gray-600"
@@ -130,8 +134,9 @@ const MyJobs = () => {
               onChange={(e) => updateJobStatus(job.id, e.target.value)}
               className="border p-2 rounded"
             >
-              <option value="Pending">Pending</option>
+              <option value="Not inspected">Not inspected</option>
               <option value="In Progress">In Progress</option>
+              <option value="Approval Pending">Approval Pending</option>
               <option value="Completed">Completed</option>
             </select>
 
