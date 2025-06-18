@@ -1,4 +1,6 @@
 import React, { useEffect, useState } from 'react';
+import jsPDF from 'jspdf';
+import html2canvas from 'html2canvas';
 
 const MyJobs = () => {
   const [jobs, setJobs] = useState([]);
@@ -6,37 +8,16 @@ const MyJobs = () => {
   const [uploading, setUploading] = useState(false);
   const [loading, setLoading] = useState(true);
 
-  // ✅ Mock data for frontend testing
   useEffect(() => {
     const mockJobs = [
       {
         id: "mock-001",
         customerName: "Amit Sharma",
-        status: "Not inspected",
+        status: "In Progress",
         date: "2025-06-14",
         notes: "Needs urgent attention",
-        spares: "",
-        charges: "",
-        photoURL: ""
-      },
-      {
-        id: "mock-002",
-        customerName: "Sunita Verma",
-        status: "In Progress",
-        date: "2025-06-12",
-        notes: "Part replaced",
-        spares: "Compressor",
-        charges: "1200",
-        photoURL: ""
-      },
-      {
-        id: "mock-003",
-        customerName: "Ravi Kumar",
-        status: "Completed",
-        date: "2025-06-10",
-        notes: "Job done successfully",
-        spares: "",
-        charges: "2200",
+        spares: "chain",
+        charges: "100",
         photoURL: ""
       }
     ];
@@ -44,12 +25,16 @@ const MyJobs = () => {
     setLoading(false);
   }, []);
 
-  const updateJobStatus = (id, newStatus) => {
+  const updateField = (id, field, value) => {
     setJobs(prevJobs =>
       prevJobs.map(job =>
-        job.id === id ? { ...job, status: newStatus } : job
+        job.id === id ? { ...job, [field]: value } : job
       )
     );
+  };
+
+  const updateJobStatus = (id, newStatus) => {
+    updateField(id, 'status', newStatus);
   };
 
   const handlePhotoUpload = (id, file) => {
@@ -66,12 +51,34 @@ const MyJobs = () => {
     }, 1000);
   };
 
-  const updateField = (id, field, value) => {
-    setJobs(prevJobs =>
-      prevJobs.map(job =>
-        job.id === id ? { ...job, [field]: value } : job
-      )
-    );
+  const downloadJobAsPDF = async (id) => {
+    const element = document.getElementById(`job-pdf-${id}`);
+    if (!element) return;
+
+    element.style.display = "block";
+
+    try {
+      await new Promise(res => setTimeout(res, 300));
+
+      const canvas = await html2canvas(element, {
+        scale: 2,
+        useCORS: true,
+        windowWidth: 794
+      });
+      const imgData = canvas.toDataURL('image/png');
+
+      const pdf = new jsPDF();
+      const width = pdf.internal.pageSize.getWidth();
+      const height = (canvas.height * width) / canvas.width;
+
+      pdf.addImage(imgData, 'PNG', 0, 0, width, height);
+      pdf.save(`${id}_job_details.pdf`);
+    } catch (error) {
+      console.error("❌ PDF export failed:", error.message);
+      alert("PDF generation failed. Try again.");
+    } finally {
+      element.style.display = "none";
+    }
   };
 
   const filteredJobs = jobs.filter(job => filter === "All" || job.status === filter);
@@ -100,7 +107,7 @@ const MyJobs = () => {
         filteredJobs.map(job => (
           <div
             key={job.id}
-            className={`border p-4 rounded mb-4 shadow-md transition-all duration-300 ${
+            className={`border p-4 rounded mb-6 shadow-md transition-all duration-300 ${
               job.status === "Not inspected"
                 ? "bg-red-100 border-red-400"
                 : job.status === "In Progress"
@@ -114,28 +121,25 @@ const MyJobs = () => {
           >
             <p><strong>Job ID:</strong> {job.id}</p>
             <p><strong>Customer:</strong> {job.customerName}</p>
-            <p><strong>Date:</strong> {job.date || 'N/A'}</p>
-
+            <p><strong>Date:</strong> {job.date}</p>
             <p>
               <strong>Status:</strong>{" "}
-              <span
-                className={`font-semibold ${
-                  job.status === "Not inspected"
-                    ? "text-red-600"
-                    : job.status === "In Progress"
-                    ? "text-yellow-700"
-                    : job.status === "Approval Pending"
-                    ? "text-blue-700"
-                    : job.status === "Completed"
-                    ? "text-green-600"
-                    : "text-gray-600"
-                }`}
-              >
+              <span className={`font-semibold ${
+                job.status === "Not inspected"
+                  ? "text-red-600"
+                  : job.status === "In Progress"
+                  ? "text-yellow-700"
+                  : job.status === "Approval Pending"
+                  ? "text-blue-700"
+                  : job.status === "Completed"
+                  ? "text-green-600"
+                  : "text-gray-600"
+              }`}>
                 {job.status}
               </span>
             </p>
 
-            <label className="block mt-2">Update Status:</label>
+            <label className="block mt-4">Update Status:</label>
             <select
               value={job.status}
               onChange={(e) => updateJobStatus(job.id, e.target.value)}
@@ -181,6 +185,54 @@ const MyJobs = () => {
               className="border p-2 w-full mt-1 rounded"
             />
             <p className="text-sm text-gray-600 mt-1">GST extra as applicable</p>
+
+            {/* ✅ A4 Width PDF Export (794px) */}
+            <div id={`job-pdf-${job.id}`} style={{ display: 'none' }}>
+              <div style={{
+                width: '794px',
+                border: '1px solid #ccc',
+                padding: '24px',
+                borderRadius: '8px',
+                backgroundColor: '#fff',
+                fontFamily: 'Arial, sans-serif',
+                fontSize: '16px',
+                lineHeight: '1.8',
+                color: '#000'
+              }}>
+                <p><strong>Job ID:</strong> {job.id}</p>
+                <p><strong>Customer:</strong> {job.customerName}</p>
+                <p><strong>Date:</strong> {job.date}</p>
+                <p>
+                  <strong>Status:</strong>{" "}
+                  <span style={{
+                    fontWeight: '600',
+                    color:
+                      job.status === "Not inspected"
+                        ? "#dc2626"
+                        : job.status === "In Progress"
+                        ? "#ca8a04"
+                        : job.status === "Approval Pending"
+                        ? "#2563eb"
+                        : job.status === "Completed"
+                        ? "#16a34a"
+                        : "#000"
+                  }}>
+                    {job.status}
+                  </span>
+                </p>
+                <p><strong>Remarks:</strong> {job.notes}</p>
+                <p><strong>Spares Required:</strong> {job.spares}</p>
+                <p><strong>Service Charges:</strong> ₹ {job.charges}</p>
+                <p style={{ fontSize: '12px', color: '#777' }}>GST extra as applicable</p>
+              </div>
+            </div>
+
+            <button
+              onClick={() => downloadJobAsPDF(job.id)}
+              className="mt-4 bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700"
+            >
+              Download PDF
+            </button>
           </div>
         ))
       )}
