@@ -59,7 +59,6 @@ const MyJobs = () => {
 
     try {
       await new Promise(res => setTimeout(res, 300));
-
       const canvas = await html2canvas(element, {
         scale: 2,
         useCORS: true,
@@ -186,7 +185,7 @@ const MyJobs = () => {
             />
             <p className="text-sm text-gray-600 mt-1">GST extra as applicable</p>
 
-            {/* ✅ A4 Width PDF Export (794px) */}
+            {/* ✅ PDF Export — status & remarks removed */}
             <div id={`job-pdf-${job.id}`} style={{ display: 'none' }}>
               <div style={{
                 width: '794px',
@@ -202,25 +201,6 @@ const MyJobs = () => {
                 <p><strong>Job ID:</strong> {job.id}</p>
                 <p><strong>Customer:</strong> {job.customerName}</p>
                 <p><strong>Date:</strong> {job.date}</p>
-                <p>
-                  <strong>Status:</strong>{" "}
-                  <span style={{
-                    fontWeight: '600',
-                    color:
-                      job.status === "Not inspected"
-                        ? "#dc2626"
-                        : job.status === "In Progress"
-                        ? "#ca8a04"
-                        : job.status === "Approval Pending"
-                        ? "#2563eb"
-                        : job.status === "Completed"
-                        ? "#16a34a"
-                        : "#000"
-                  }}>
-                    {job.status}
-                  </span>
-                </p>
-                <p><strong>Remarks:</strong> {job.notes}</p>
                 <p><strong>Spares Required:</strong> {job.spares}</p>
                 <p><strong>Service Charges:</strong> ₹ {job.charges}</p>
                 <p style={{ fontSize: '12px', color: '#777' }}>GST extra as applicable</p>
