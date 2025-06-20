@@ -8,11 +8,9 @@ export default function RedirectByRole() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (role === "owner" || role === "coordinator") {
+    if (role === "owner" || role === "coordinator" || role === "engineer") {
       navigate("/dashboard");
-    } else if (role === "engineer") {
-      navigate("/my-jobs");
-    } else if (role !== null) {
+    }else if (role !== null) {
       navigate("/unauthorized");
     }
   }, [role, navigate]);

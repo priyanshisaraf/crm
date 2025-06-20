@@ -5,13 +5,14 @@ import Login from "../components/pages/Login.jsx";
 import Signup from "../components/pages/Signup.jsx";
 import Dashboard from "../components/pages/Dashboard.jsx";
 import CreateJob from "../components/pages/CreateJob.jsx";
+import AllJobs from "../components/pages/AllJobs.jsx";
 import MyJobs from "../components/pages/MyJobs.jsx";
-import JobDetails from "../components/pages/JobDetails.jsx";
+import EditJob from "../components/pages/EditJob.jsx";
 import Customer from "../components/pages/Customers.jsx";
 import Unauthorized from "../components/pages/Unauthorized.jsx";
 import SettingsPage from "../components/pages/Settings/index.jsx";
 import AddUser from "../components/pages/Settings/AddUser.jsx";
-
+import CustomerDetails from "../components/pages/CustomerDetails.jsx";
 import PrivateRoute from "./PrivateRoute";
 import RoleBasedRoute from "./RoleBasedRoute";
 import RedirectByRole from "./RedirectByRole"; 
@@ -30,10 +31,14 @@ export default function AppRouter() {
       <Route element={<PrivateRoute />}>
         <Route index element={<RedirectByRole />} /> {/* 👈 auto-role redirect */}
         <Route path="/dashboard" element={<Dashboard />} />
-        <Route path="/my-jobs" element={<MyJobs />} />
-        <Route path="/job/:id" element={<JobDetails />} />
+        <Route path="/edit-job/:jobid" element={<EditJob />} />
         <Route path="/customers" element={<Customer />} />
-
+        <Route path="/customers/:id" element={<CustomerDetails />} />
+        <Route path="/all-jobs" element={<AllJobs />} />
+        {/* Engineer Only */}
+        <Route element={<RoleBasedRoute allowedRoles={["engineer"]} />}>
+          <Route path="/my-jobs" element={<MyJobs />} />
+        </Route>
         {/* Coordinator Only */}
         <Route element={<RoleBasedRoute allowedRoles={["coordinator"]} />}>
           <Route path="/create-job" element={<CreateJob />} />

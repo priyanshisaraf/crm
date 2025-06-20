@@ -16,7 +16,7 @@ export default function Navbar() {
       </div>
 
       {/* Bottom Row: Nav Links aligned to right */}
-      <div className="flex justify-end items-center space-x-10 text-sm text-gray-700">
+      <div className="flex sm:justify-end items-center space-x-6 md:space-x-10 pt-5 md:pt-0 text-sm text-gray-700">
         <Link to="/customers" className="hover:text-purple-600 flex items-center gap-1">
           👥 <span>Customers</span>
         </Link>
@@ -32,6 +32,9 @@ export default function Navbar() {
             🧰 <span>My Jobs</span>
           </Link>
         )}
+        <Link to="/all-jobs" className="hover:text-purple-600 flex items-center gap-1">
+          🗂️ <span>All Jobs</span>
+        </Link>
 
         <Link to="/settings" className="hover:text-purple-600 flex items-center gap-1">
           ⚙ <span>Settings</span>

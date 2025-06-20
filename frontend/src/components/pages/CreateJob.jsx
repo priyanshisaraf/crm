@@ -1,18 +1,22 @@
-import { useState } from 'react';
+import { useState,useEffect  } from 'react';
 import {
   collection,
-  addDoc,
+  query,
+  where,
   serverTimestamp,
   doc,
   setDoc,
   getDoc,
+  getDocs
 } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { db, storage } from '../../firebase/firebaseConfig';
 
 export default function CreateJob() {
   const [formData, setFormData] = useState({
+    jobid: '',
     gstin: '',
+    loc: '',
     customerName: '',
     phone: '',
     city: '',
@@ -23,13 +27,58 @@ export default function CreateJob() {
     description: '',
     engineer: '',
     callStatus: '',
-    purchaseDate: '',
+    jdate: '',
     invoiceNo: '',
     image: null,
   });
 
   const [imagePreview, setImagePreview] = useState(null);
-  const engineers = ['Rajeev Kumar', 'Anjali Mehra', 'Vikram Singh'];
+  const [engineerOptions, setEngineerOptions] = useState([]);
+  useEffect(() => {
+  const fetchEngineers = async () => {
+    try {
+      const q = query(
+        collection(db, 'users'),
+        where('role', '==', 'engineer'),
+        where('isRegistered', '==', true)
+      );
+      const snapshot = await getDocs(q);
+      const emails = snapshot.docs.map(doc => doc.data().email);
+      setEngineerOptions(emails);
+    } catch (error) {
+      console.error('Error fetching engineers:', error);
+    }
+  };
+
+  fetchEngineers();
+}, []);
+useEffect(() => {
+  const fetchCustomerDetails = async () => {
+    const name = formData.customerName.trim();
+    if (!name) return;
+
+    try {
+      const customerRef = doc(db, "customers", name); // doc ID = customerName
+      const snap = await getDoc(customerRef);
+
+      if (snap.exists()) {
+        const data = snap.data();
+
+        setFormData((prev) => ({
+          ...prev,
+          city: data.city || '',
+          phone: data.phone || '',
+          gstin: data.gstin || '',
+        }));
+      }
+    } catch (err) {
+      console.error("Error fetching customer details:", err);
+    }
+  };
+
+  fetchCustomerDetails();
+}, [formData.customerName]);
+
 
   const handleChange = (e) => {
     const { name, value, type, files } = e.target;
@@ -61,22 +110,37 @@ export default function CreateJob() {
 
 const handleSubmit = async (e) => {
   e.preventDefault();
-  if (submitting) return; // Prevent multiple clicks
-  if (!formData.phone.trim()) {
-    alert('⚠️ Phone number is required to create a job.');
-    return;
+  if (submitting) return;
+
+  const requiredFields = [
+    { key: 'jobid', label: 'Job ID' },
+    { key: 'jdate', label: 'Date' },
+    { key: 'loc', label: 'Location of Service' },
+    { key: 'customerName', label: 'Customer Name' },
+    { key: 'phone', label: 'Phone' },
+    { key: 'city', label: 'City' },
+    { key: 'poc', label: 'POC' },
+    { key: 'brand', label: 'Brand' },
+    { key: 'model', label: 'Model' },
+    { key: 'serialNo', label: 'Serial Number' },
+  ];
+
+  for (const field of requiredFields) {
+    if (!formData[field.key].trim()) {
+      alert(`⚠️ ${field.label} is required.`);
+      return;
+    }
   }
 
   setSubmitting(true);
 
-  const customerId = formData.phone;
+  const customerId = formData.customerName;
   const customerRef = doc(db, 'customers', customerId);
   const customerData = {
     gstin: formData.gstin,
     name: formData.customerName,
     phone: formData.phone,
     city: formData.city,
-    poc: formData.poc,
     createdAt: serverTimestamp(),
   };
 
@@ -91,24 +155,17 @@ const handleSubmit = async (e) => {
     }
 
     const jobData = {
-      brand: formData.brand,
-      model: formData.model,
-      serialNo: formData.serialNo,
-      description: formData.description,
-      engineer: formData.engineer,
-      callStatus: formData.callStatus,
-      purchaseDate: formData.purchaseDate,
-      invoiceNo: formData.invoiceNo,
-      imageUrl: imageUrl,
-      customerId,
-      status: 'Pending',
-      createdAt: serverTimestamp(),
-    };
+  ...formData, 
+  imageUrl,    
+  status: 'Not Inspected',
+  createdAt: serverTimestamp(),
+};
 
-    // 📝 Save job
-    const jobRef = await addDoc(collection(db, 'jobs'), jobData);
 
-    // 👥 Save customer if not exists
+    const jobRef = doc(db, 'jobs', formData.jobid);
+    await setDoc(jobRef, jobData);
+
+
     const customerSnap = await getDoc(customerRef);
     if (!customerSnap.exists()) {
       await setDoc(customerRef, customerData);
@@ -116,9 +173,10 @@ const handleSubmit = async (e) => {
 
     alert(`✅ Job created successfully! ID: ${jobRef.id}`);
 
-    // ♻️ Reset form
     setFormData({
+      jobid: '',
       gstin: '',
+      loc: '',
       customerName: '',
       phone: '',
       city: '',
@@ -129,7 +187,7 @@ const handleSubmit = async (e) => {
       description: '',
       engineer: '',
       callStatus: '',
-      purchaseDate: '',
+      jdate: '',
       invoiceNo: '',
       image: null,
     });
@@ -143,94 +201,185 @@ const handleSubmit = async (e) => {
 };
 
 
+
   return (
     <div className="min-h-screen bg-gray-100">
       <form
         onSubmit={handleSubmit}
-        className="bg-white shadow-md rounded px-8 pt-6 pb-8 mb-6 max-w-3xl mx-auto mt-10 space-y-8"
+        className="bg-white shadow-md rounded px-8 pt-6 pb-8 mb-6 max-w-3xl mx-auto space-y-8"
       >
         <h2 className="text-2xl font-bold text-gray-800">Create New Job</h2>
 
-        {/* Section: Purchase Info */}
+        {/* Section: Basic Info */}
         <div>
-          <h3 className="text-xl font-semibold text-gray-700 mb-2">Purchase Information</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Job ID <span className="text-red-500">*</span>
+            </label>
             <input
-              type="date"
-              name="purchaseDate"
-              value={formData.purchaseDate}
+              name="jobid"
+              value={formData.jobid}
               onChange={handleChange}
               className="border px-4 py-2 rounded w-full"
             />
+          </div>
+            <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+            Date <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="date"
+              name="jdate"
+              value={formData.jdate}
+              onChange={handleChange}
+              className="border px-4 py-2 rounded w-full"
+            />
+            </div>
+            <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+            Location of Service <span className="text-red-500">*</span>
+            </label>
+            <select name="loc" value={formData.loc} onChange={handleChange} className="border px-4 py-2 rounded w-full">
+            <option value="">-Select-</option>
+            <option value="SE">Sandeep Enterprises</option>
+            <option value="CL">Customer Location</option>
+            </select>
+            </div>
+            <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+            Invoice Number
+          </label>
             <input
               name="invoiceNo"
-              placeholder="Invoice Number"
               value={formData.invoiceNo}
               onChange={handleChange}
               className="border px-4 py-2 rounded w-full"
             />
+            </div>
           </div>
         </div>
 
         {/* Section: Customer Details */}
-        <div>
-          <h3 className="text-xl font-semibold text-gray-700 mb-2">Customer Details</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <input name="gstin" placeholder="GSTIN" value={formData.gstin} onChange={handleChange} className="border px-4 py-2 rounded w-full" />
-            <input name="customerName" placeholder="Customer Name" value={formData.customerName} onChange={handleChange} className="border px-4 py-2 rounded w-full" />
-            <input name="phone" placeholder="Phone" value={formData.phone} onChange={handleChange} className="border px-4 py-2 rounded w-full" />
-            <input name="city" placeholder="City" value={formData.city} onChange={handleChange} className="border px-4 py-2 rounded w-full" />
-            <input name="poc" placeholder="POC (Point of Contact)" value={formData.poc} onChange={handleChange} className="border px-4 py-2 rounded w-full col-span-1 md:col-span-2" />
-          </div>
-        </div>
+<div>
+  <h3 className="text-xl font-semibold text-gray-700 mb-2">Customer Details</h3>
+  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <div>
+      <label className="block text-sm font-medium text-gray-700 mb-1">
+        GSTIN
+      </label>
+      <input name="gstin" value={formData.gstin} onChange={handleChange} className="border px-4 py-2 rounded w-full" />
+    </div>
 
-        {/* Section: Machine Details */}
-        <div>
-          <h3 className="text-xl font-semibold text-gray-700 mb-2">Machine Details</h3>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <input name="brand" placeholder="Brand" value={formData.brand} onChange={handleChange} className="border px-4 py-2 rounded w-full" />
-            <input name="model" placeholder="Model" value={formData.model} onChange={handleChange} className="border px-4 py-2 rounded w-full" />
-            <input name="serialNo" placeholder="Serial No." value={formData.serialNo} onChange={handleChange} className="border px-4 py-2 rounded w-full" />
-            <select name="callStatus" value={formData.callStatus} onChange={handleChange} className="border px-4 py-2 rounded w-full col-span-1 md:col-span-2">
-              <option value="">Call Status</option>
-              <option value="Inside Warranty">Inside Warranty</option>
-              <option value="Outside Warranty">Outside Warranty</option>
-              <option value="Commissioning/Installation Request">Commissioning/Installation Request</option>
-            </select>
-          </div>
-        </div>
+    <div>
+      <label className="block text-sm font-medium text-gray-700 mb-1">
+        Customer Name <span className="text-red-500">*</span>
+      </label>
+      <input name="customerName" value={formData.customerName} onChange={handleChange} className="border px-4 py-2 rounded w-full" />
+    </div>
 
-        {/* Section: Complaint & Engineer */}
-        <div>
-          <h3 className="text-xl font-semibold text-gray-700 mb-2">Complaint & Assignment</h3>
-          <textarea name="description" placeholder="Complaint Description" value={formData.description} onChange={handleChange} className="border px-4 py-2 rounded w-full h-24" />
-          <select name="engineer" value={formData.engineer} onChange={handleChange} className="border px-4 py-2 rounded w-full mt-2">
-            <option value="">Assign Engineer</option>
-            {engineers.map((eng, index) => (
-              <option key={index} value={eng}>{eng}</option>
-            ))}
-          </select>
-        </div>
+    <div>
+      <label className="block text-sm font-medium text-gray-700 mb-1">
+        Phone <span className="text-red-500">*</span>
+      </label>
+      <input name="phone" value={formData.phone} onChange={handleChange} className="border px-4 py-2 rounded w-full" />
+    </div>
 
-        {/* Section: Upload Image */}
-        <div>
-          <h3 className="text-xl font-semibold text-gray-700 mb-2">Upload Image (Optional)</h3>
-          <p className="text-sm text-gray-500">
-          Size: 500 KB
-        </p>
-          <input
-            type="file"
-            accept="image/*"
-            onChange={handleChange}
-            className="border px-4 py-2 rounded w-full"
-          />
-          {imagePreview && (
-            <div className="mt-4">
-              <p className="text-sm text-gray-600 mb-1">Preview:</p>
-              <img src={imagePreview} alt="Preview" className="max-h-48 rounded border" />
-            </div>
-          )}
-        </div>
+    <div>
+      <label className="block text-sm font-medium text-gray-700 mb-1">
+        City <span className="text-red-500">*</span>
+      </label>
+      <input name="city" value={formData.city} onChange={handleChange} className="border px-4 py-2 rounded w-full" />
+    </div>
+
+    <div className="md:col-span-2">
+      <label className="block text-sm font-medium text-gray-700 mb-1">
+        POC (Point of Contact) <span className="text-red-500">*</span>
+      </label>
+      <input name="poc" value={formData.poc} onChange={handleChange} className="border px-4 py-2 rounded w-full" />
+    </div>
+  </div>
+</div>
+
+{/* Section: Machine Details */}
+<div>
+  <h3 className="text-xl font-semibold text-gray-700 mb-2">Machine Details</h3>
+  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+    <div>
+      <label className="block text-sm font-medium text-gray-700 mb-1">
+        Brand <span className="text-red-500">*</span>
+      </label>
+      <input name="brand" value={formData.brand} onChange={handleChange} className="border px-4 py-2 rounded w-full" />
+    </div>
+
+    <div>
+      <label className="block text-sm font-medium text-gray-700 mb-1">
+        Model <span className="text-red-500">*</span>
+      </label>
+      <input name="model" value={formData.model} onChange={handleChange} className="border px-4 py-2 rounded w-full" />
+    </div>
+
+    <div>
+      <label className="block text-sm font-medium text-gray-700 mb-1">
+        Serial No. <span className="text-red-500">*</span>
+      </label>
+      <input name="serialNo" value={formData.serialNo} onChange={handleChange} className="border px-4 py-2 rounded w-full" />
+    </div>
+
+    <div className="md:col-span-2">
+      <label className="block text-sm font-medium text-gray-700 mb-1">
+        Call Status
+      </label>
+      <select name="callStatus" value={formData.callStatus} onChange={handleChange} className="border px-4 py-2 rounded w-full">
+        <option value="">-Select-</option>
+        <option value="Inside Warranty">Inside Warranty</option>
+        <option value="Outside Warranty">Outside Warranty</option>
+        <option value="Commissioning/Installation Request">Commissioning/Installation Request</option>
+      </select>
+    </div>
+  </div>
+</div>
+
+{/* Section: Complaint & Engineer */}
+<div>
+  <h3 className="text-xl font-semibold text-gray-700 mb-2">Complaint & Assignment</h3>
+  <div className="space-y-2">
+    <label className="block text-sm font-medium text-gray-700 mb-1">
+      Complaint Description
+    </label>
+    <textarea name="description" placeholder="Write something..." value={formData.description} onChange={handleChange} className="border px-4 py-2 rounded w-full h-24" />
+
+    <label className="block text-sm font-medium text-gray-700 mb-1">
+      Assign Engineer
+    </label>
+    <select name="engineer" value={formData.engineer} onChange={handleChange} className="border px-4 py-2 rounded w-full">
+      <option value="">Select Engineer</option>
+      {engineerOptions.map((email, index) => (
+      <option key={index} value={email}>{email}</option>
+    ))}
+
+    </select>
+  </div>
+</div>
+
+{/* Section: Upload Image */}
+<div>
+  <h3 className="text-xl font-semibold text-gray-700 mb-2">Upload Image (Optional)</h3>
+  <p className="text-sm text-gray-500">Size: 500 KB</p>
+  <input
+    type="file"
+    accept="image/*"
+    onChange={handleChange}
+    className="border px-4 py-2 rounded w-full"
+  />
+  {imagePreview && (
+    <div className="mt-4">
+      <p className="text-sm text-gray-600 mb-1">Preview:</p>
+      <img src={imagePreview} alt="Preview" className="max-h-48 rounded border" />
+    </div>
+  )}
+</div>
+
 
         {/* Submit */}
         <div className="text-right">
