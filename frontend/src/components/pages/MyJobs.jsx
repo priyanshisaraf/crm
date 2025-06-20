@@ -4,15 +4,37 @@ import html2canvas from 'html2canvas';
 import { collection, query, where, onSnapshot, doc, updateDoc } from "firebase/firestore";
 import { db } from '../../firebase/firebaseConfig';
 import { useAuth } from '../../context/AuthContext';
+import { Timestamp } from "firebase/firestore";
 
 const MyJobs = () => {
   const { currentUser } = useAuth();
   const [jobs, setJobs] = useState([]);
   const [filter, setFilter] = useState("All");
+  const formatDate = (dateStr) => {
+  if (!dateStr) return '-';
+  const date = new Date(dateStr);
+  const dd = String(date.getDate()).padStart(2, '0');
+  const mm = String(date.getMonth() + 1).padStart(2, '0');
+  const yyyy = date.getFullYear();
+  return `${dd}-${mm}-${yyyy}`;
+};
+  const handleSaveJob = async (job) => {
+  try {
+    const jobRef = doc(db, "jobs", job.id);
+    await updateDoc(jobRef, {
+      notes: job.notes || "",
+      spares: job.spares || "",
+      charges: job.charges || "",
+    });
+    alert("Job details saved successfully.");
+  } catch (error) {
+    console.error("Error saving job:", error);
+    alert("Failed to save job details.");
+  }
+};
 
   useEffect(() => {
   if (!currentUser?.email) return;
-  console.log("Fetching jobs for:", currentUser.email);
 
   const q = query(
     collection(db, "jobs"),
@@ -21,7 +43,6 @@ const MyJobs = () => {
 
   const unsubscribe = onSnapshot(q, (snapshot) => {
     const jobList = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-    console.log("Fetched jobs:", jobList);
     setJobs(jobList);
   });
 
@@ -30,15 +51,27 @@ const MyJobs = () => {
 
 
   const updateField = async (id, field, value) => {
-    setJobs(prev => prev.map(job => job.id === id ? { ...job, [field]: value } : job));
-    const jobRef = doc(db, "jobs", id);
-    await updateDoc(jobRef, { [field]: value });
-  };
+  const jobRef = doc(db, "jobs", id);
 
-  const handlePhotoUpload = (id, file) => {
-    const photoURL = URL.createObjectURL(file);
-    updateField(id, 'photoURL', photoURL); // For demo; implement proper upload for production.
-  };
+  const updateData = { [field]: value };
+
+  // Handle 'completedOn' when status is updated
+  if (field === "status") {
+    if (value === "Completed") {
+      updateData.completedOn = Timestamp.now(); // Firebase server timestamp
+    } else {
+      updateData.completedOn = null; // Clear the field if changed from Completed
+    }
+  }
+
+  try {
+    await updateDoc(jobRef, updateData);
+    // ❌ Do NOT update local state manually — Firestore's onSnapshot will do this
+  } catch (err) {
+    console.error("❌ Failed to update field:", err);
+    alert("Failed to update job. See console for details.");
+  }
+};
 
   const downloadJobAsPDF = async (id) => {
     const element = document.getElementById(`job-pdf-${id}`);
@@ -96,7 +129,7 @@ const MyJobs = () => {
               <h2 className="text-lg font-semibold text-purple-700 mb-2">Job Information</h2>
               <div className="flex flex-wrap gap-x-8 gap-y-1">
                 <p><strong>Job ID:</strong> {job.id}</p>
-                <p><strong>Date:</strong> {job.jdate}</p>
+                <p><strong>Date:</strong> {formatDate(job.jdate)}</p>
                 <p><strong>Invoice Number:</strong> {job.invoiceNo || "N/A"}</p>
               </div>
             </div>
@@ -106,10 +139,9 @@ const MyJobs = () => {
               <h2 className="text-lg font-semibold text-purple-700 mb-2">Customer Details</h2>
               <div className="flex flex-wrap gap-x-8 gap-y-1">
                 <p><strong>Customer:</strong> {job.customerName}</p>
-                <p><strong>GSTIN:</strong> {job.gstin}</p>
+                <p><strong>POC:</strong> {job.poc}</p>
                 <p><strong>Phone:</strong> {job.phone}</p>
                 <p><strong>City:</strong> {job.city}</p>
-                <p><strong>POC:</strong> {job.poc}</p>
               </div>
             </div>
 
@@ -151,17 +183,9 @@ const MyJobs = () => {
                 <option value="Completed">Completed</option>
               </select>
 
-              <label className="block font-medium mt-2">Upload Photo:</label>
-              <input
-                type="file"
-                className='border p-1 rounded w-full'
-                onChange={(e) => handlePhotoUpload(job.id, e.target.files[0])}
-              />
-              {job.photoURL && <img src={job.photoURL} alt="Uploaded" className="w-24 mt-2 rounded" />}
-
               <label className="block font-medium mt-2">Remarks:</label>
               <textarea
-                value={job.notes}
+                value={job.notes || ""}
                 onChange={(e) => updateField(job.id, "notes", e.target.value)}
                 className="border p-1 w-full rounded"
               />
@@ -169,7 +193,7 @@ const MyJobs = () => {
               <label className="block font-medium mt-2">Spares Required:</label>
               <textarea
                 type="text"
-                value={job.spares}
+                value={job.spares || ""}
                 onChange={(e) => updateField(job.id, "spares", e.target.value)}
                 className="border p-1 w-full rounded"
               />
@@ -177,20 +201,26 @@ const MyJobs = () => {
               <label className="block font-medium mt-2">Service Charges:</label>
               <input
                 type="text"
-                value={job.charges}
+                value={job.charges || ""}
                 onChange={(e) => updateField(job.id, "charges", e.target.value)}
                 className="border p-1 w-full rounded"
               />
               <p className="text-sm text-gray-600 mt-1">GST extra as applicable</p>
             </div>
-
+            <div className='flex justify-end gap-5'>
+            <button
+              onClick={() => handleSaveJob(job)}
+              className="bg-green-600 text-white px-4 py-1 rounded hover:bg-green-700 mb-2"
+            >
+              Save
+            </button>
             <button
               onClick={() => downloadJobAsPDF(job.id)}
-              className="bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700"
+              className="bg-purple-600 text-white px-4 py-1 rounded hover:bg-purple-700 mb-2"
             >
               Download PDF
             </button>
-
+            </div>
             {/* Hidden Printable PDF */}
             <div id={`job-pdf-${job.id}`} style={{ display: "none" }}>
               <div style={{ width: '794px', padding: '24px', fontFamily: 'Arial, sans-serif', backgroundColor: '#fff' }}>

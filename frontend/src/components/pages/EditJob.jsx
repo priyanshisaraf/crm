@@ -143,17 +143,6 @@ export default function EditJob() {
             <option value="CL">Customer Location</option>
             </select>
             </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Invoice Number
-            </label>
-            <input
-              name="invoiceNo"
-              value={formData.invoiceNo || ''}
-              onChange={handleChange}
-              className="border px-4 py-2 rounded w-full"
-            />
-          </div>
         </div>
       </div>
 
@@ -162,24 +151,28 @@ export default function EditJob() {
         <h3 className="text-xl font-semibold text-gray-700 mb-2">Customer Details</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">GSTIN</label>
-            <input name="gstin" value={formData.gstin || ''} onChange={handleChange} className="border px-4 py-2 rounded w-full" />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Customer Name <span className="text-red-500">*</span></label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Customer Name <span className="text-red-500">*</span>
+            </label>
             <input name="customerName" value={formData.customerName} onChange={handleChange} className="border px-4 py-2 rounded w-full" />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Phone <span className="text-red-500">*</span></label>
-            <input name="phone" value={formData.phone} onChange={handleChange} className="border px-4 py-2 rounded w-full" />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">City <span className="text-red-500">*</span></label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              City <span className="text-red-500">*</span>
+            </label>
             <input name="city" value={formData.city} onChange={handleChange} className="border px-4 py-2 rounded w-full" />
           </div>
-          <div className="md:col-span-2">
-            <label className="block text-sm font-medium text-gray-700 mb-1">POC (Point of Contact) <span className="text-red-500">*</span></label>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              POC (Point of Contact) <span className="text-red-500">*</span>
+            </label>
             <input name="poc" value={formData.poc} onChange={handleChange} className="border px-4 py-2 rounded w-full" />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Phone <span className="text-red-500">*</span>
+            </label>
+            <input name="phone" value={formData.phone} onChange={handleChange} className="border px-4 py-2 rounded w-full" />
           </div>
         </div>
       </div>

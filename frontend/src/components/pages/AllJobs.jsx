@@ -5,12 +5,29 @@ import Navbar from '../layouts/NavBar';
 
 export default function AllJobs() {
   const [jobs, setJobs] = useState([]);
+  const [modalJob, setModalJob] = useState(null);
   const [engineerFilter, setEngineerFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [showClosedOnly, setShowClosedOnly] = useState(false);
   const [engineerOptions, setEngineerOptions] = useState([]);
+    const formatDate = (dateStr) => {
+    if (!dateStr) return '-';
+    const date = new Date(dateStr);
+    const dd = String(date.getDate()).padStart(2, '0');
+    const mm = String(date.getMonth() + 1).padStart(2, '0');
+    const yyyy = date.getFullYear();
+    return `${dd}-${mm}-${yyyy}`;
+  };
+const formatTimestamp = (timestamp) => {
+  if (!timestamp?.seconds) return '-';
+  const date = new Date(timestamp.seconds * 1000);
+  const dd = String(date.getDate()).padStart(2, '0');
+  const mm = String(date.getMonth() + 1).padStart(2, '0');
+  const yyyy = date.getFullYear();
+  return `${dd}-${mm}-${yyyy}`;
+};
   useEffect(() => {
     const fetchEngineers = async () => {
       const q = query(
@@ -55,6 +72,7 @@ export default function AllJobs() {
   const rows = filteredJobs.map(job => [
     job.jobid || job.id,
     job.customerName || '-',
+    job.poc || '-',
     job.phone || '-',
     job.engineer || '-',
     job.status,
@@ -137,24 +155,35 @@ export default function AllJobs() {
             <thead className="bg-gray-100">
               <tr>
                 <th className="p-2 border">Job ID</th>
+                <th className="p-2 border">Date</th>
                 <th className="p-2 border">Customer</th>
+                <th className="p-2 border">POC</th>
                 <th className="p-2 border">Phone</th>
                 <th className="p-2 border">Engineer</th>
                 <th className="p-2 border">Status</th>
-                <th className="p-2 border">Date</th>
+                <th className="p-2 border">Completed On</th>
                 <th className="p-2 border">Closed On</th>
               </tr>
             </thead>
             <tbody>
               {filteredJobs.map(job => (
                 <tr key={job.id}>
-                  <td className="p-2 border">{job.jobid || job.id}</td>
+                  <td className="p-2 border">
+                <span
+                  className="text-blue-600 underline hover:bg-gray-100 cursor-pointer"
+                  onClick={() => setModalJob(job)}
+                >
+                  {job.id}
+                </span>
+              </td>
+                  <td className="p-2 border">{formatDate(job.jdate) || '-'}</td>
                   <td className="p-2 border">{job.customerName}</td>
+                  <td className="p-2 border">{job.poc || '-'}</td>
                   <td className="p-2 border">{job.phone}</td>
                   <td className="p-2 border">{job.engineer}</td>
                   <td className="p-2 border">{job.status}</td>
-                  <td className="p-2 border">{job.jdate || '-'}</td>
-                  <td className="p-2 border">{job.closedAt ? new Date(job.closedAt.seconds * 1000).toLocaleDateString() : '-'}</td>
+                  <td className="p-2 border">{formatTimestamp(job.completedOn)}</td>
+                  <td className="p-2 border">{job.closedAt ? formatTimestamp(job.closedAt) : '-'}</td>
                 </tr>
               ))}
               {filteredJobs.length === 0 && (
@@ -166,6 +195,59 @@ export default function AllJobs() {
           </table>
         </div>
       </div>
+      {/* Job Modal */}
+    {modalJob && (
+      <div className="fixed inset-0 z-50 flex items-center justify-center backdrop-blur">
+        <div className="bg-white p-6 rounded-lg max-w-lg w-full shadow-lg border border-gray-300 relative">
+          <button
+            onClick={() => setModalJob(null)}
+            className="absolute top-2 right-2 text-3xl text-gray-500 hover:text-red-600 font-bold cursor-pointer"
+            aria-label="Close Modal"
+          >
+            &times;
+          </button>
+          <h3 className="text-2xl font-bold text-gray-800 mb-4">Job Details</h3>
+          <div className="space-y-6 text-sm text-gray-800">
+            <div>
+              <p><strong>Job ID: </strong> {modalJob.jobid || modalJob.id}</p>
+              <p><strong>Date: </strong> {formatDate(modalJob.jdate)}</p>
+              <p><strong>Location of Service: </strong> {modalJob.loc}</p>
+              {modalJob.invoiceNo && <p><strong>Invoice No:</strong> {modalJob.invoiceNo}</p>}
+            </div>
+            <div>
+              <h4 className="text-lg font-semibold border-b pb-1 mb-2">Customer Details</h4>
+              {modalJob.gstin && <p><strong>GSTIN:</strong> {modalJob.gstin}</p>}
+              <p><strong>Name: </strong> {modalJob.customerName}</p>
+              <p><strong>POC: </strong> {modalJob.poc}</p>
+              <p><strong>Phone: </strong> {modalJob.phone || modalJob.customerId}</p>
+              <p><strong>City: </strong> {modalJob.city}</p>
+            </div>
+            <div>
+              <h4 className="text-lg font-semibold border-b pb-1 mb-2">Machine Details</h4>
+              <p><strong>Brand: </strong> {modalJob.brand}</p>
+              <p><strong>Model: </strong> {modalJob.model}</p>
+              <p><strong>Serial No: </strong> {modalJob.serialNo}</p>
+              <p><strong>Call Status: </strong> {modalJob.callStatus || '-'}</p>
+            </div>
+            <div>
+              <h4 className="text-lg font-semibold border-b pb-1 mb-2">Complaint & Assignment</h4>
+              <p><strong>Description: </strong> {modalJob.description || '-'}</p>
+              <p><strong>Engineer: </strong> {modalJob.engineer || '-'}</p>
+              <p><strong>Status: </strong> {modalJob.status}</p>
+            {modalJob.notes && (
+                <p><strong>Remarks: </strong>{modalJob.notes}</p>
+            )}
+            {modalJob.spares && (
+                  <p><strong>Spares Used: </strong>{modalJob.spares}</p>
+              )}
+              {modalJob.charges && (
+                  <p><strong>Charges: </strong>₹{modalJob.charges}</p>
+              )}
+              </div>
+          </div>
+        </div>
+      </div>
+    )}
     </div>
   );
 }

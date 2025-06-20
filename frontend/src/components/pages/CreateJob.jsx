@@ -1,4 +1,4 @@
-import { useState,useEffect  } from 'react';
+import { useState, useEffect } from 'react';
 import {
   collection,
   query,
@@ -9,8 +9,7 @@ import {
   getDoc,
   getDocs
 } from 'firebase/firestore';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { db, storage } from '../../firebase/firebaseConfig';
+import { db } from '../../firebase/firebaseConfig';
 
 export default function CreateJob() {
   const [formData, setFormData] = useState({
@@ -27,181 +26,106 @@ export default function CreateJob() {
     description: '',
     engineer: '',
     callStatus: '',
-    jdate: '',
-    invoiceNo: '',
-    image: null,
+    jdate: ''
   });
-
-  const [imagePreview, setImagePreview] = useState(null);
+  
   const [engineerOptions, setEngineerOptions] = useState([]);
-  useEffect(() => {
-  const fetchEngineers = async () => {
-    try {
-      const q = query(
-        collection(db, 'users'),
-        where('role', '==', 'engineer'),
-        where('isRegistered', '==', true)
-      );
-      const snapshot = await getDocs(q);
-      const emails = snapshot.docs.map(doc => doc.data().email);
-      setEngineerOptions(emails);
-    } catch (error) {
-      console.error('Error fetching engineers:', error);
-    }
-  };
-
-  fetchEngineers();
-}, []);
-useEffect(() => {
-  const fetchCustomerDetails = async () => {
-    const name = formData.customerName.trim();
-    if (!name) return;
-
-    try {
-      const customerRef = doc(db, "customers", name); // doc ID = customerName
-      const snap = await getDoc(customerRef);
-
-      if (snap.exists()) {
-        const data = snap.data();
-
-        setFormData((prev) => ({
-          ...prev,
-          city: data.city || '',
-          phone: data.phone || '',
-          gstin: data.gstin || '',
-        }));
-      }
-    } catch (err) {
-      console.error("Error fetching customer details:", err);
-    }
-  };
-
-  fetchCustomerDetails();
-}, [formData.customerName]);
-
-
-  const handleChange = (e) => {
-    const { name, value, type, files } = e.target;
-    if (type === 'file') {
-      const file = files[0];
-      if (type === 'file') {
-      const file = files[0];
-
-      if (!file.type.startsWith('image/')) {
-        alert('❌ Only image files are allowed.');
-        return;
-      }
-
-      if (file.size > 500 * 1024) { // 500 KB = 500 × 1024 bytes
-        alert('❌ Image size should be under 500 KB.');
-        return;
-      }
-
-      setFormData({ ...formData, image: file });
-      setImagePreview(URL.createObjectURL(file));
-    }
-      setImagePreview(URL.createObjectURL(file));
-    } else {
-      setFormData({ ...formData, [name]: value });
-    }
-  };
-
   const [submitting, setSubmitting] = useState(false);
 
-const handleSubmit = async (e) => {
-  e.preventDefault();
-  if (submitting) return;
+  useEffect(() => {
+    const fetchEngineers = async () => {
+      try {
+        const q = query(
+          collection(db, 'users'),
+          where('role', '==', 'engineer'),
+          where('isRegistered', '==', true)
+        );
+        const snapshot = await getDocs(q);
+        const emails = snapshot.docs.map(doc => doc.data().email);
+        setEngineerOptions(emails);
+      } catch (error) {
+        console.error('Error fetching engineers:', error);
+      }
+    };
 
-  const requiredFields = [
-    { key: 'jobid', label: 'Job ID' },
-    { key: 'jdate', label: 'Date' },
-    { key: 'loc', label: 'Location of Service' },
-    { key: 'customerName', label: 'Customer Name' },
-    { key: 'phone', label: 'Phone' },
-    { key: 'city', label: 'City' },
-    { key: 'poc', label: 'POC' },
-    { key: 'brand', label: 'Brand' },
-    { key: 'model', label: 'Model' },
-    { key: 'serialNo', label: 'Serial Number' },
-  ];
-
-  for (const field of requiredFields) {
-    if (!formData[field.key].trim()) {
-      alert(`⚠️ ${field.label} is required.`);
-      return;
-    }
-  }
-
-  setSubmitting(true);
-
-  const customerId = formData.customerName;
-  const customerRef = doc(db, 'customers', customerId);
-  const customerData = {
-    gstin: formData.gstin,
-    name: formData.customerName,
-    phone: formData.phone,
-    city: formData.city,
-    createdAt: serverTimestamp(),
+    fetchEngineers();
+  }, []);
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  let imageUrl = '';
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (submitting) return;
 
-  try {
-    // 🔄 Upload image if provided
-    if (formData.image) {
-      const imageRef = ref(storage, `jobs/${Date.now()}_${formData.image.name}`);
-      await uploadBytes(imageRef, formData.image);
-      imageUrl = await getDownloadURL(imageRef);
+    const requiredFields = [
+      { key: 'jobid', label: 'Job ID' },
+      { key: 'jdate', label: 'Date' },
+      { key: 'loc', label: 'Location of Service' },
+      { key: 'customerName', label: 'Customer Name' },
+      { key: 'phone', label: 'Phone' },
+      { key: 'city', label: 'City' },
+      { key: 'poc', label: 'POC' },
+      { key: 'brand', label: 'Brand' },
+      { key: 'model', label: 'Model' },
+      { key: 'serialNo', label: 'Serial Number' },
+    ];
+
+    for (const field of requiredFields) {
+      if (!formData[field.key].trim()) {
+        alert(`⚠️ ${field.label} is required.`);
+        return;
+      }
     }
+
+    setSubmitting(true);
+
+    const customerRef = doc(db, 'customers', formData.customerName);
+    const customerData = {
+      name: formData.customerName,
+      createdAt: serverTimestamp(),
+    };
 
     const jobData = {
-  ...formData, 
-  imageUrl,    
-  status: 'Not Inspected',
-  createdAt: serverTimestamp(),
-};
+      ...formData,
+      status: 'Not Inspected',
+      createdAt: serverTimestamp(),
+    };
 
+    try {
+      const jobRef = doc(db, 'jobs', formData.jobid);
+      await setDoc(jobRef, jobData);
 
-    const jobRef = doc(db, 'jobs', formData.jobid);
-    await setDoc(jobRef, jobData);
+      const customerSnap = await getDoc(customerRef);
+      if (!customerSnap.exists()) {
+        await setDoc(customerRef, customerData);
+      }
 
-
-    const customerSnap = await getDoc(customerRef);
-    if (!customerSnap.exists()) {
-      await setDoc(customerRef, customerData);
+      alert(`✅ Job created successfully! ID: ${jobRef.id}`);
+      setFormData({
+        jobid: '',
+        gstin: '',
+        loc: '',
+        customerName: '',
+        phone: '',
+        city: '',
+        poc: '',
+        brand: '',
+        model: '',
+        serialNo: '',
+        description: '',
+        engineer: '',
+        callStatus: '',
+        jdate: '',
+      });
+    } catch (error) {
+      console.error('❌ Error creating job:', error);
+      alert('❌ Failed to create job. Please try again.');
+    } finally {
+      setSubmitting(false);
     }
-
-    alert(`✅ Job created successfully! ID: ${jobRef.id}`);
-
-    setFormData({
-      jobid: '',
-      gstin: '',
-      loc: '',
-      customerName: '',
-      phone: '',
-      city: '',
-      poc: '',
-      brand: '',
-      model: '',
-      serialNo: '',
-      description: '',
-      engineer: '',
-      callStatus: '',
-      jdate: '',
-      invoiceNo: '',
-      image: null,
-    });
-    setImagePreview(null);
-  } catch (error) {
-    console.error('❌ Error creating job:', error);
-    alert('❌ Failed to create job. Please try again.');
-  } finally {
-    setSubmitting(false);
-  }
-};
-
-
-
+  };
   return (
     <div className="min-h-screen bg-gray-100">
       <form
@@ -242,20 +166,9 @@ const handleSubmit = async (e) => {
             </label>
             <select name="loc" value={formData.loc} onChange={handleChange} className="border px-4 py-2 rounded w-full">
             <option value="">-Select-</option>
-            <option value="SE">Sandeep Enterprises</option>
-            <option value="CL">Customer Location</option>
+            <option value="Sandeep Enterprises">Sandeep Enterprises</option>
+            <option value="Customer Location">Customer Location</option>
             </select>
-            </div>
-            <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-            Invoice Number
-          </label>
-            <input
-              name="invoiceNo"
-              value={formData.invoiceNo}
-              onChange={handleChange}
-              className="border px-4 py-2 rounded w-full"
-            />
             </div>
           </div>
         </div>
@@ -266,37 +179,27 @@ const handleSubmit = async (e) => {
   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
     <div>
       <label className="block text-sm font-medium text-gray-700 mb-1">
-        GSTIN
-      </label>
-      <input name="gstin" value={formData.gstin} onChange={handleChange} className="border px-4 py-2 rounded w-full" />
-    </div>
-
-    <div>
-      <label className="block text-sm font-medium text-gray-700 mb-1">
         Customer Name <span className="text-red-500">*</span>
       </label>
       <input name="customerName" value={formData.customerName} onChange={handleChange} className="border px-4 py-2 rounded w-full" />
     </div>
-
-    <div>
-      <label className="block text-sm font-medium text-gray-700 mb-1">
-        Phone <span className="text-red-500">*</span>
-      </label>
-      <input name="phone" value={formData.phone} onChange={handleChange} className="border px-4 py-2 rounded w-full" />
-    </div>
-
     <div>
       <label className="block text-sm font-medium text-gray-700 mb-1">
         City <span className="text-red-500">*</span>
       </label>
       <input name="city" value={formData.city} onChange={handleChange} className="border px-4 py-2 rounded w-full" />
     </div>
-
-    <div className="md:col-span-2">
+    <div>
       <label className="block text-sm font-medium text-gray-700 mb-1">
         POC (Point of Contact) <span className="text-red-500">*</span>
       </label>
       <input name="poc" value={formData.poc} onChange={handleChange} className="border px-4 py-2 rounded w-full" />
+    </div>
+    <div>
+      <label className="block text-sm font-medium text-gray-700 mb-1">
+        Phone <span className="text-red-500">*</span>
+      </label>
+      <input name="phone" value={formData.phone} onChange={handleChange} className="border px-4 py-2 rounded w-full" />
     </div>
   </div>
 </div>
@@ -361,26 +264,6 @@ const handleSubmit = async (e) => {
     </select>
   </div>
 </div>
-
-{/* Section: Upload Image */}
-<div>
-  <h3 className="text-xl font-semibold text-gray-700 mb-2">Upload Image (Optional)</h3>
-  <p className="text-sm text-gray-500">Size: 500 KB</p>
-  <input
-    type="file"
-    accept="image/*"
-    onChange={handleChange}
-    className="border px-4 py-2 rounded w-full"
-  />
-  {imagePreview && (
-    <div className="mt-4">
-      <p className="text-sm text-gray-600 mb-1">Preview:</p>
-      <img src={imagePreview} alt="Preview" className="max-h-48 rounded border" />
-    </div>
-  )}
-</div>
-
-
         {/* Submit */}
         <div className="text-right">
           <button

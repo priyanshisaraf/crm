@@ -13,6 +13,7 @@ import Unauthorized from "../components/pages/Unauthorized.jsx";
 import SettingsPage from "../components/pages/Settings/index.jsx";
 import AddUser from "../components/pages/Settings/AddUser.jsx";
 import CustomerDetails from "../components/pages/CustomerDetails.jsx";
+import PublicJobStatus from "../components/pages/PublicJobStatus.jsx";
 import PrivateRoute from "./PrivateRoute";
 import RoleBasedRoute from "./RoleBasedRoute";
 import RedirectByRole from "./RedirectByRole"; 
@@ -24,6 +25,7 @@ export default function AppRouter() {
     <Routes>
       <Route path="/" element={<Navigate to="/login" replace />} />
       {/* ✅ Public Routes */}
+      <Route path="/status/:jobid/:jdate" element={<PublicJobStatus />} />
       <Route path="/login" element={<Login />} />
       <Route path="/signup" element={<Signup />} />
 

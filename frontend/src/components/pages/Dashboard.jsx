@@ -6,7 +6,6 @@ import { collection, serverTimestamp, onSnapshot, query, updateDoc, doc } from "
 
 export default function Dashboard() {
   const { currentUser, role } = useAuth();
-
   const [jobs, setJobs] = useState([]);
   const [filter, setFilter] = useState("all");
   const [search, setSearch] = useState("");
@@ -23,7 +22,14 @@ export default function Dashboard() {
     settled: false,
     remarks: "",
   });
-
+  const formatDate = (dateStr) => {
+    if (!dateStr) return '-';
+    const date = new Date(dateStr);
+    const dd = String(date.getDate()).padStart(2, '0');
+    const mm = String(date.getMonth() + 1).padStart(2, '0');
+    const yyyy = date.getFullYear();
+    return `${dd}-${mm}-${yyyy}`;
+  };
   const statusLabels = [
     "Not Inspected",
     "Approval Pending",
@@ -102,31 +108,38 @@ export default function Dashboard() {
   };
 
   const confirmCloseCall = async () => {
-    if (hasClaim && (!claimDetails.principal.trim() || !claimDetails.details.trim())) {
-      alert("Please provide both Principal's name and Claim details.");
-      return;
-    }
-    try {
-      const jobRef = doc(db, "jobs", modalJob.id);
-      await updateDoc(jobRef, {
-        status: "Completed",
-        closedAt: serverTimestamp(),
-        ...(hasClaim && {
-          claim: {
-            principal: claimDetails.principal,
-            details: claimDetails.details,
-            settled: claimDetails.settled,
-            remarks: claimDetails.remarks,
-          }
-        })
-      });
-      setModalJob(null);
-      setClaimStep(false);
-    } catch (err) {
-      console.error("Error closing call:", err);
-      alert("Failed to close call.");
-    }
-  };
+  if (hasClaim === null) {
+    alert("Please select whether there is a claim for this job.");
+    return;
+  }
+
+  if (hasClaim === true && (!claimDetails.principal.trim() || !claimDetails.details.trim())) {
+    alert("Please provide both Principal's name and Claim details.");
+    return;
+  }
+
+  try {
+    const jobRef = doc(db, "jobs", modalJob.id);
+    await updateDoc(jobRef, {
+      status: "Completed",
+      closedAt: serverTimestamp(),
+      ...(hasClaim && {
+        claim: {
+          principal: claimDetails.principal,
+          details: claimDetails.details,
+          settled: claimDetails.settled,
+          remarks: claimDetails.remarks,
+        }
+      })
+    });
+    setModalJob(null);
+    setClaimStep(false);
+  } catch (err) {
+    console.error("Error closing call:", err);
+    alert("Failed to close call.");
+  }
+};
+
 
   const indexOfLastJob = currentPage * jobsPerPage;
   const indexOfFirstJob = indexOfLastJob - jobsPerPage;
@@ -184,7 +197,7 @@ export default function Dashboard() {
               <option key={status} value={status}>{status}</option>
             ))}
           </select>
-          <button onClick={handleExportCSV} className="bg-green-600 text-white px-4 py-1 rounded hover:bg-green-700">
+          <button onClick={handleExportCSV} className="bg-green-600 text-white px-4 py-1 rounded hover:bg-green-700 cursor-pointer">
             Export CSV
           </button>
         </div>
@@ -197,6 +210,7 @@ export default function Dashboard() {
             <tr className="bg-gray-100 text-left">
               <th className="p-2 border">Job ID</th>
               <th className="p-2 border">Customer Name</th>
+              <th className="p-2 border">POC</th>
               <th className="p-2 border">Phone</th>
               <th className="p-2 border">Engineer</th>
               <th className="p-2 border">Status</th>
@@ -206,11 +220,17 @@ export default function Dashboard() {
             {currentJobs.map(job => (
               <tr
                 key={job.id}
-                className="hover:bg-gray-50 cursor-pointer"
-                onClick={() => setModalJob(job)}
               >
-                <td className="p-2 border text-blue-600 underline">{job.id}</td>
+                <td className="p-2 border">
+                <span
+                  className="text-blue-600 underline hover:bg-gray-100 cursor-pointer"
+                  onClick={() => setModalJob(job)}
+                >
+                  {job.id}
+                </span>
+              </td>
                 <td className="p-2 border">{job.customerName || '-'}</td>
+                <td className="p-2 border">{job.poc || '-'}</td>
                 <td className="p-2 border">{job.phone || '-'}</td>
                 <td className="p-2 border">{job.engineer || '-'}</td>
                 <td className="p-2 border">{job.status}</td>
@@ -231,7 +251,7 @@ export default function Dashboard() {
           <button
             key={i + 1}
             onClick={() => setCurrentPage(i + 1)}
-            className={`px-3 py-1 rounded ${currentPage === i + 1 ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700'}`}
+            className={`px-3 py-1 rounded cursor-pointer ${currentPage === i + 1 ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700'}`}
           >
             {i + 1}
           </button>
@@ -241,51 +261,60 @@ export default function Dashboard() {
 
     {/* Job Modal */}
     {modalJob && (
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-white bg-opacity-80">
+      <div className="fixed inset-0 z-50 flex items-center justify-center backdrop-blur">
         <div className="bg-white p-6 rounded-lg max-w-lg w-full shadow-lg border border-gray-300 relative">
-          <button onClick={() => setModalJob(null)} className="absolute top-2 right-2 text-gray-500 hover:text-red-600 text-xl">&times;</button>
+          <button
+            onClick={() => setModalJob(null)}
+            className="absolute top-2 right-2 text-3xl text-gray-500 hover:text-red-600 font-bold cursor-pointer"
+            aria-label="Close Modal"
+          >
+            &times;
+          </button>
           <h3 className="text-2xl font-bold text-gray-800 mb-4">Job Details</h3>
           <div className="space-y-6 text-sm text-gray-800">
             <div>
-              <p><strong>Job ID:</strong> {modalJob.jobid || modalJob.id}</p>
-              <p><strong>Date:</strong> {modalJob.jdate}</p>
-              <p><strong>Location of Service:</strong> {modalJob.loc}</p>
+              <p><strong>Job ID: </strong> {modalJob.jobid || modalJob.id}</p>
+              <p><strong>Date: </strong> {formatDate(modalJob.jdate)}</p>
+              <p><strong>Location of Service: </strong> {modalJob.loc}</p>
               {modalJob.invoiceNo && <p><strong>Invoice No:</strong> {modalJob.invoiceNo}</p>}
             </div>
             <div>
               <h4 className="text-lg font-semibold border-b pb-1 mb-2">Customer Details</h4>
               {modalJob.gstin && <p><strong>GSTIN:</strong> {modalJob.gstin}</p>}
-              <p><strong>Name:</strong> {modalJob.customerName}</p>
-              <p><strong>Phone:</strong> {modalJob.phone || modalJob.customerId}</p>
-              <p><strong>City:</strong> {modalJob.city}</p>
-              <p><strong>POC:</strong> {modalJob.poc}</p>
+              <p><strong>Name: </strong> {modalJob.customerName}</p>
+              <p><strong>POC: </strong> {modalJob.poc}</p>
+              <p><strong>Phone: </strong> {modalJob.phone || modalJob.customerId}</p>
+              <p><strong>City: </strong> {modalJob.city}</p>
             </div>
             <div>
               <h4 className="text-lg font-semibold border-b pb-1 mb-2">Machine Details</h4>
-              <p><strong>Brand:</strong> {modalJob.brand}</p>
-              <p><strong>Model:</strong> {modalJob.model}</p>
-              <p><strong>Serial No:</strong> {modalJob.serialNo}</p>
-              <p><strong>Call Status:</strong> {modalJob.callStatus || '-'}</p>
+              <p><strong>Brand: </strong> {modalJob.brand}</p>
+              <p><strong>Model: </strong> {modalJob.model}</p>
+              <p><strong>Serial No: </strong> {modalJob.serialNo}</p>
+              <p><strong>Call Status: </strong> {modalJob.callStatus || '-'}</p>
             </div>
             <div>
               <h4 className="text-lg font-semibold border-b pb-1 mb-2">Complaint & Assignment</h4>
-              <p><strong>Description:</strong> {modalJob.description || '-'}</p>
-              <p><strong>Engineer:</strong> {modalJob.engineer || '-'}</p>
-              <p><strong>Status:</strong> {modalJob.status}</p>
-            </div>
-            {modalJob.imageUrl && (
-              <div>
-                <h4 className="text-lg font-semibold border-b pb-1 mb-2">🖼️ Uploaded Image</h4>
-                <img src={modalJob.imageUrl} alt="Job" className="rounded max-h-48 border" />
-              </div>
+              <p><strong>Description: </strong> {modalJob.description || '-'}</p>
+              <p><strong>Engineer: </strong> {modalJob.engineer || '-'}</p>
+              <p><strong>Status: </strong> {modalJob.status}</p>
+            {modalJob.notes && (
+                <p><strong>Remarks: </strong>{modalJob.notes}</p>
             )}
+            {modalJob.spares && (
+                  <p><strong>Spares Used: </strong>{modalJob.spares}</p>
+              )}
+              {modalJob.charges && (
+                  <p><strong>Charges: </strong>₹{modalJob.charges}</p>
+              )}
+              </div>
           </div>
           {role !== "engineer" && (
             <div className="mt-4 flex gap-2">
-              <button onClick={() => window.location.href = `/edit-job/${modalJob.id}`} className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded">
+              <button onClick={() => window.location.href = `/edit-job/${modalJob.id}`} className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded cursor-pointer">
                 Edit Job
               </button>
-              <button onClick={() => initiateCloseCall(modalJob)} className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded">
+              <button onClick={() => initiateCloseCall(modalJob)} className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded cursor-pointer">
                 Close Call
               </button>
             </div>
@@ -296,58 +325,98 @@ export default function Dashboard() {
 
     {/* Claim Modal */}
     {claimStep && modalJob && (
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
-        <div className="bg-white p-6 rounded-lg w-full max-w-lg shadow-lg relative">
-          <button onClick={() => setClaimStep(false)} className="absolute top-2 right-2 text-gray-500 hover:text-red-600 text-xl">&times;</button>
-          <h3 className="text-xl font-bold mb-4 text-gray-800">Any claim for this job?</h3>
-          <div className="space-y-4 text-sm text-gray-700">
-            <div className="flex gap-4">
-              <button
-                className={`px-4 py-1 rounded ${hasClaim === true ? 'bg-blue-600 text-white' : 'bg-gray-200'}`}
-                onClick={() => setHasClaim(true)}
-              >Yes</button>
-              <button
-                className={`px-4 py-1 rounded ${hasClaim === false ? 'bg-blue-600 text-white' : 'bg-gray-200'}`}
-                onClick={() => setHasClaim(false)}
-              >No</button>
-            </div>
+  <div className="fixed inset-0 z-50 flex items-center justify-center backdrop-blur">
+    <div className="bg-white p-6 rounded-lg w-full max-w-lg shadow-lg relative border border-gray-300">
+      <button
+        onClick={() => setClaimStep(false)}
+        className="absolute top-2 right-2 text-3xl text-gray-500 hover:text-red-600 font-bold cursor-pointer"
+        aria-label="Close Claim Modal"
+      >
+        &times;
+      </button>
+      <h3 className="text-xl font-bold mb-4 text-gray-800">Any claim for this job?</h3>
 
-            {hasClaim && (
-              <>
-                <div>
-                  <label>Principal's Name: <span className="text-red-500">*</span></label>
-                  <input type="text" value={claimDetails.principal} onChange={(e) => setClaimDetails({ ...claimDetails, principal: e.target.value })} className="w-full border px-3 py-1 rounded" />
-                </div>
-                <div>
-                  <label>Claim Details: <span className="text-red-500">*</span></label>
-                  <textarea value={claimDetails.details} onChange={(e) => setClaimDetails({ ...claimDetails, details: e.target.value })} className="w-full border px-3 py-1 rounded" />
-                </div>
-                <div className="flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    checked={claimDetails.settled}
-                    onChange={(e) => setClaimDetails({ ...claimDetails, settled: e.target.checked })}
-                  />
-                  <span>Settled and closed</span>
-                </div>
-                {claimDetails.settled && (
-                  <div>
-                    <label>Remarks:</label>
-                    <textarea value={claimDetails.remarks} onChange={(e) => setClaimDetails({ ...claimDetails, remarks: e.target.value })} className="w-full border px-3 py-1 rounded" />
-                  </div>
-                )}
-              </>
-            )}
+      <div className="space-y-4 text-sm text-gray-700">
+        {/* YES / NO Buttons */}
+        <div className="flex gap-4">
+          <button
+            className={`px-4 py-1 rounded cursor-pointer ${hasClaim === true ? 'bg-blue-600 text-white' : 'bg-gray-200'}`}
+            onClick={() => setHasClaim(true)}
+          >
+            Yes
+          </button>
+          <button
+            className={`px-4 py-1 rounded cursor-pointer ${hasClaim === false ? 'bg-blue-600 text-white' : 'bg-gray-200'}`}
+            onClick={() => setHasClaim(false)}
+          >
+            No
+          </button>
+        </div>
 
-            <div className="flex justify-end pt-4">
-              <button onClick={confirmCloseCall} className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded">
-                Close Call
-              </button>
+        {/* Conditional Claim Fields */}
+        {!hasClaim && (
+          <>
+          <label>Invoice Number: <span className="text-red-500">*</span></label>
+          <input
+            type="text"
+            value={claimDetails.invoiceNo || ''}
+            onChange={(e) =>
+              setClaimDetails({ ...claimDetails, invoiceNo: e.target.value })
+            }
+            className="w-full border px-3 py-1 rounded"
+          />
+          </>
+        )}
+        {hasClaim && (
+          <>
+            <div>
+              <label>Invoice Number: <span className="text-red-500">*</span></label>
+              <input
+                type="text"
+                value={claimDetails.invoiceNo || ''}
+                onChange={(e) =>
+                  setClaimDetails({ ...claimDetails, invoiceNo: e.target.value })
+                }
+                className="w-full border px-3 py-1 rounded"
+              />
             </div>
-          </div>
+            <div>
+              <label>Principal's Name: <span className="text-red-500">*</span></label>
+              <input
+                type="text"
+                value={claimDetails.principal}
+                onChange={(e) =>
+                  setClaimDetails({ ...claimDetails, principal: e.target.value })
+                }
+                className="w-full border px-3 py-1 rounded"
+              />
+            </div>
+            <div>
+              <label>Claim Details: <span className="text-red-500">*</span></label>
+              <textarea
+                value={claimDetails.details}
+                onChange={(e) =>
+                  setClaimDetails({ ...claimDetails, details: e.target.value })
+                }
+                className="w-full border px-3 py-1 rounded"
+              />
+            </div>
+          </>
+        )}
+
+        {/* Submit */}
+        <div className="flex justify-end pt-4">
+          <button
+            onClick={confirmCloseCall}
+            className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded cursor-pointer"
+          >
+            Close Call
+          </button>
         </div>
       </div>
-    )}
+    </div>
+  </div>
+)}
   </div>
 );
 }
