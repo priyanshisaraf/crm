@@ -18,10 +18,7 @@ export default function CustomersPage() {
   }, []);
 
   const csvHeaders = [
-    { label: "Name", key: "name" },
-    { label: "Phone", key: "phone" },
-    { label: "City", key: "city" },
-    { label: "GSTIN", key: "gstin" }
+    { label: "Name", key: "name" }
   ];
 
 
@@ -42,9 +39,6 @@ export default function CustomersPage() {
         <thead>
           <tr className="bg-gray-100">
             <th className="p-2 text-left">Name</th>
-            <th className="p-2 text-left">Phone</th>
-            <th className="p-2 text-left">City</th>
-            <th className="p-2 text-left">GSTIN</th>
             <th className="p-2 text-left">Actions</th>
           </tr>
         </thead>
@@ -52,9 +46,6 @@ export default function CustomersPage() {
           {customers.map((c) => (
             <tr key={c.id} className="border-t">
               <td className="p-2">{c.name}</td>
-              <td className="p-2">{c.phone}</td>
-              <td className="p-2">{c.city}</td>
-              <td className="p-2">{c.gstin || "N/A"}</td>
               <td className="p-2">
                 <button
                   onClick={() => navigate(`/customers/${c.id}`)}
