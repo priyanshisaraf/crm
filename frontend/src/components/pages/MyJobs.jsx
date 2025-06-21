@@ -5,73 +5,72 @@ import { collection, query, where, onSnapshot, doc, updateDoc } from "firebase/f
 import { db } from '../../firebase/firebaseConfig';
 import { useAuth } from '../../context/AuthContext';
 import { Timestamp } from "firebase/firestore";
+import NavBar from '../layouts/NavBar';
 
 const MyJobs = () => {
   const { currentUser } = useAuth();
   const [jobs, setJobs] = useState([]);
   const [filter, setFilter] = useState("All");
   const formatDate = (dateStr) => {
-  if (!dateStr) return '-';
-  const date = new Date(dateStr);
-  const dd = String(date.getDate()).padStart(2, '0');
-  const mm = String(date.getMonth() + 1).padStart(2, '0');
-  const yyyy = date.getFullYear();
-  return `${dd}-${mm}-${yyyy}`;
-};
+    if (!dateStr) return '-';
+    const date = new Date(dateStr);
+    const dd = String(date.getDate()).padStart(2, '0');
+    const mm = String(date.getMonth() + 1).padStart(2, '0');
+    const yyyy = date.getFullYear();
+    return `${dd}-${mm}-${yyyy}`;
+  };
+
   const handleSaveJob = async (job) => {
-  try {
-    const jobRef = doc(db, "jobs", job.id);
-    await updateDoc(jobRef, {
-      notes: job.notes || "",
-      spares: job.spares || "",
-      charges: job.charges || "",
-    });
-    alert("Job details saved successfully.");
-  } catch (error) {
-    console.error("Error saving job:", error);
-    alert("Failed to save job details.");
-  }
-};
+    try {
+      const jobRef = doc(db, "jobs", job.id);
+      await updateDoc(jobRef, {
+        notes: job.notes || "",
+        spares: job.spares || "",
+        charges: job.charges || "",
+      });
+      alert("Job details saved successfully.");
+    } catch (error) {
+      console.error("Error saving job:", error);
+      alert("Failed to save job details.");
+    }
+  };
 
   useEffect(() => {
-  if (!currentUser?.email) return;
+    if (!currentUser?.email) return;
 
-  const q = query(
-    collection(db, "jobs"),
-    where("engineer", "==", currentUser.email)
-  );
+    const q = query(
+      collection(db, "jobs"),
+      where("engineer", "==", currentUser.email)
+    );
 
-  const unsubscribe = onSnapshot(q, (snapshot) => {
-    const jobList = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-    setJobs(jobList);
-  });
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const jobList = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      setJobs(jobList);
+    });
 
-  return () => unsubscribe();
-}, [currentUser]);
-
+    return () => unsubscribe();
+  }, [currentUser]);
 
   const updateField = async (id, field, value) => {
-  const jobRef = doc(db, "jobs", id);
+    const jobRef = doc(db, "jobs", id);
 
-  const updateData = { [field]: value };
+    const updateData = { [field]: value };
 
-  // Handle 'completedOn' when status is updated
-  if (field === "status") {
-    if (value === "Completed") {
-      updateData.completedOn = Timestamp.now(); // Firebase server timestamp
-    } else {
-      updateData.completedOn = null; // Clear the field if changed from Completed
+    if (field === "status") {
+      if (value === "Completed") {
+        updateData.completedOn = Timestamp.now();
+      } else {
+        updateData.completedOn = null;
+      }
     }
-  }
 
-  try {
-    await updateDoc(jobRef, updateData);
-    // ❌ Do NOT update local state manually — Firestore's onSnapshot will do this
-  } catch (err) {
-    console.error("❌ Failed to update field:", err);
-    alert("Failed to update job. See console for details.");
-  }
-};
+    try {
+      await updateDoc(jobRef, updateData);
+    } catch (err) {
+      console.error("❌ Failed to update field:", err);
+      alert("Failed to update job. See console for details.");
+    }
+  };
 
   const downloadJobAsPDF = async (id) => {
     const element = document.getElementById(`job-pdf-${id}`);
@@ -92,38 +91,40 @@ const MyJobs = () => {
 
   const filteredJobs = jobs.filter(job => filter === "All" || job.status === filter);
 
-  const statusColor = (status) => {
+  const statusBorder = (status) => {
     switch (status) {
-      case "Completed": return "bg-green-100";
-      case "In Progress": return "bg-yellow-100";
-      case "Approval Pending": return "bg-blue-100";
-      default: return "bg-red-100";
+      case "Completed": return "border-green-400";
+      case "In Progress": return "border-yellow-400";
+      case "Approval Pending": return "border-blue-400";
+      default: return "border-red-400";
     }
   };
 
   return (
-    <div className="p-6 bg-gray-50 min-h-screen">
-      <div className="flex items-center mb-2 gap-20">
-      <h1 className="text-3xl font-bold mb-4">My Assigned Jobs</h1>
-
-      <select
-        value={filter}
-        onChange={(e) => setFilter(e.target.value)}
-        className="mb-5 p-1 border rounded"
-      >
-        <option value="All">All</option>
-        <option value="Not Inspected">Not Inspected</option>
-        <option value="In Progress">In Progress</option>
-        <option value="Approval Pending">Approval Pending</option>
-        <option value="Completed">Completed</option>
-      </select>
-      </div>
-      <div className="flex flex-wrap gap-5">
-        {filteredJobs.map(job => (
-          <div
-            key={job.id}
-            className={`w-full md:w-[48%] lg:w-[32%] shadow-md rounded-lg p-5 border ${statusColor(job.status)}`}
+    <div className="min-h-screen bg-gray-100">
+      <NavBar />
+      <div className="max-w-screen-2xl mx-auto px-4 py-6">
+        <div className="flex flex-wrap items-center justify-start mb-6 gap-10">
+          <h1 className="text-3xl font-bold">My Assigned Jobs</h1>
+          <select
+            value={filter}
+            onChange={(e) => setFilter(e.target.value)}
+            className="border border-gray-300 px-3 py-1 rounded rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-400 transition cursor-pointer"
           >
+            <option value="All">All</option>
+            <option value="Not Inspected">Not Inspected</option>
+            <option value="In Progress">In Progress</option>
+            <option value="Approval Pending">Approval Pending</option>
+            <option value="Completed">Completed</option>
+          </select>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {filteredJobs.map(job => (
+            <div
+              key={job.id}
+              className={`bg-white shadow-lg rounded-xl p-5 border-2 ${statusBorder(job.status)}`}
+            >
             {/* Job Info */}
             <div className="mb-4">
               <h2 className="text-lg font-semibold text-purple-700 mb-2">Job Information</h2>
@@ -170,11 +171,11 @@ const MyJobs = () => {
               <select
                 value={job.status}
                 onChange={(e) => updateField(job.id, "status", e.target.value)}
-                className={`border p-1 rounded font-semibold ${
-                  job.status === "Completed" ? "text-green-700" :
-                  job.status === "In Progress" ? "text-yellow-700" :
-                  job.status === "Approval Pending" ? "text-blue-700" :
-                  "text-red-700"
+                className={`border px-3 py-1 rounded rounded-lg shadow-sm cursor-pointer font-semibold ${
+                  job.status === "Completed" ? "text-green-700 focus:ring-2 focus:ring-green-800 transition bg-green-100" :
+                  job.status === "In Progress" ? "text-yellow-700 focus:ring-2 focus:ring-yellow-800 transition bg-yellow-100" :
+                  job.status === "Approval Pending" ? "text-blue-700 focus:ring-2 focus:ring-blue-800 transition bg-blue-100" :
+                  "text-red-700 focus:ring-2 focus:ring-red-800 transition bg-red-100"
                 }`}
               >
                 <option value="Not Inspected">Not Inspected</option>
@@ -210,13 +211,13 @@ const MyJobs = () => {
             <div className='flex justify-end gap-5'>
             <button
               onClick={() => handleSaveJob(job)}
-              className="bg-green-600 text-white px-4 py-1 rounded hover:bg-green-700 mb-2"
+              className="bg-green-600 text-white px-4 py-1 rounded hover:bg-green-700 mb-2 cursor-pointer"
             >
               Save
             </button>
             <button
               onClick={() => downloadJobAsPDF(job.id)}
-              className="bg-purple-600 text-white px-4 py-1 rounded hover:bg-purple-700 mb-2"
+              className="bg-purple-600 text-white px-4 py-1 rounded hover:bg-purple-700 mb-2 cursor-pointer"
             >
               Download PDF
             </button>
@@ -246,6 +247,7 @@ const MyJobs = () => {
           </div>
         ))}
       </div>
+    </div>
     </div>
   );
 };

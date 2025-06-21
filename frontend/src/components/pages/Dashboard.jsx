@@ -36,7 +36,20 @@ export default function Dashboard() {
     "In Progress",
     "Completed"
   ];
-
+  const statusColors = {
+    "Not Inspected": "bg-red-100 text-red-600",
+    "Approval Pending": "bg-blue-100 text-blue-600",
+    "In Progress": "bg-yellow-100 text-yellow-600",
+    "Completed (Not Closed)": "bg-purple-100 text-purple-600",
+    "Completed (Closed)": "bg-green-100 text-green-600",
+  };
+  const statusTextColors = {
+  "Not Inspected": "text-red-600",
+  "Approval Pending": "text-blue-600",
+  "In Progress": "text-yellow-600",
+  "Completed": "text-purple-600",
+  "Closed": "text-green-600",
+};
   useEffect(() => {
     const q = query(collection(db, "jobs"));
     const unsubscribe = onSnapshot(q, (snapshot) => {
@@ -169,107 +182,121 @@ export default function Dashboard() {
       {/* Status Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 md:grid-cols-5 gap-4 mt-6">
         {Object.entries(countByStatus).map(([status, count]) => (
-          <div key={status} className="bg-white p-4 rounded shadow text-center">
-            <h4 className="font-semibold text-gray-700 text-sm">{status}</h4>
-            <p className="text-2xl font-bold text-blue-600">{count}</p>
+          <div key={status} className={`rounded-xl p-4 text-center text-base font-semibold shadow-sm ${statusColors[status]}`}>
+            <h4>{status}</h4>
+            <p className="text-2xl font-bold mt-1">{count}</p>
           </div>
         ))}
       </div>
     </div>
 
     {/* Filters */}
-    <div className="max-w-screen-2xl mx-auto mt-10 px-4">
+    <div className="max-w-screen-2xl mx-auto mt-5 px-4">
       <h2 className="text-xl font-bold text-gray-800 mb-4">Open Jobs</h2>
 
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
+      <div className="flex flex-col sm:flex-wrap sm:flex-row gap-4 mb-6 justify-between items-start sm:items-center">
         <input
           type="text"
           placeholder="Search by Customer Name or Job ID"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="w-full sm:w-96 border px-3 py-1 rounded"
+          className="w-full sm:w-100 border border-gray-300 px-3 py-1 rounded rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-400 transition"
         />
-        <div className="flex flex-wrap items-center gap-4">
+        <div className="flex flex-col sm:flex-wrap sm:flex-row gap-4 justify-end items-start sm:items-center">
+        <div className="flex flex-row gap-4 w-full sm:w-auto">
           <label className="text-sm text-gray-600 flex items-center gap-2">
-            Start Date:
-            <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="border px-3 py-1 rounded" />
+            Start:
+            <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="border border-gray-300 px-3 py-1 rounded rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-400 transition cursor-pointer" />
           </label>
           <label className="text-sm text-gray-600 flex items-center gap-2">
-            End Date:
-            <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className="border px-3 py-1 rounded" />
+            End:
+            <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className="border border-gray-300 px-3 py-1 rounded rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-400 transition cursor-pointer" />
           </label>
-          <select value={filter} onChange={(e) => setFilter(e.target.value)} className="border px-3 py-1 rounded">
+          </div>
+          <div className="flex flex-row gap-4 w-full sm:w-auto">
+          <select value={filter} onChange={(e) => setFilter(e.target.value)} className="border border-gray-300 px-3 py-1 rounded-lg text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-400 transition cursor-pointer">
             <option value="all">All Open</option>
             {statusLabels.map(status => (
               <option key={status} value={status}>{status}</option>
             ))}
           </select>
-          <button onClick={handleExportCSV} className="bg-green-600 text-white px-4 py-1 rounded hover:bg-green-700 cursor-pointer">
+          <button onClick={handleExportCSV} className="bg-green-600 text-white px-4 py-1 rounded-lg shadow hover:bg-green-700 transition cursor-pointer">
             Export CSV
           </button>
+        </div>
         </div>
       </div>
 
       {/* Table */}
-      <div className="overflow-x-auto">
-        <table className="min-w-full bg-white border">
-          <thead>
+      <div className="overflow-x-auto rounded-xl border shadow-sm bg-white">
+        <table className="min-w-full text-sm text-left text-gray-700">
+          <thead className="bg-gray-100 uppercase text-md text-gray-500 uppercase">
             <tr className="bg-gray-100 text-left">
-              <th className="p-2 border">Job ID</th>
-              <th className="p-2 border">Customer Name</th>
-              <th className="p-2 border">POC</th>
-              <th className="p-2 border">Phone</th>
-              <th className="p-2 border">Engineer</th>
-              <th className="p-2 border">Status</th>
+              <th className="p-3 border">Job ID</th>
+              <th className="p-3 border">Customer Name</th>
+              <th className="p-3 border">POC</th>
+              <th className="p-3 border">Phone</th>
+              <th className="p-3 border">Engineer</th>
+              <th className="p-3 border">Status</th>
             </tr>
           </thead>
           <tbody>
-            {currentJobs.map(job => (
-              <tr
-                key={job.id}
-              >
-                <td className="p-2 border">
-                <span
-                  className="text-blue-600 underline hover:bg-gray-100 cursor-pointer"
-                  onClick={() => setModalJob(job)}
-                >
-                  {job.id}
-                </span>
-              </td>
-                <td className="p-2 border">{job.customerName || '-'}</td>
-                <td className="p-2 border">{job.poc || '-'}</td>
-                <td className="p-2 border">{job.phone || '-'}</td>
-                <td className="p-2 border">{job.engineer || '-'}</td>
-                <td className="p-2 border">{job.status}</td>
-              </tr>
-            ))}
-            {currentJobs.length === 0 && (
-              <tr>
-                <td colSpan="5" className="p-4 text-center text-gray-500">No jobs found for selected filter.</td>
-              </tr>
-            )}
+            {currentJobs.map((job) => {
+                return (
+                  <tr key={job.id}>
+                    <td className="p-3 border">
+                    <span
+                      className="text-blue-600 hover:text-blue-800 font-medium transition underline cursor-pointer"
+                      onClick={() => setModalJob(job)}
+                    >
+                      {job.jobid || job.id}
+                    </span>
+                  </td>
+                    <td className="p-3 border">{job.customerName || "-"}</td>
+                    <td className="p-3 border">{job.poc || "-"}</td>
+                    <td className="p-3 border">{job.phone || job.customerId || "-"}</td>
+                    <td className="p-3 border">{job.engineer || "-"}</td>
+                    <td className="p-3 border">
+                      <span className={`font-medium ${statusTextColors[job.status] || 'text-gray-700'}`}>
+                        {job.status}
+                      </span>
+                    </td>
+                  </tr>
+                );
+              })}
+              {currentJobs.length === 0 && (
+                <tr>
+                  <td colSpan="6" className="p-4 text-center text-gray-400 italic">
+                    No jobs found.
+                  </td>
+                </tr>
+              )}
           </tbody>
         </table>
       </div>
 
       {/* Pagination */}
-      <div className="flex justify-center mt-4 space-x-2">
-        {[...Array(totalPages).keys()].map(i => (
-          <button
-            key={i + 1}
-            onClick={() => setCurrentPage(i + 1)}
-            className={`px-3 py-1 rounded cursor-pointer ${currentPage === i + 1 ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700'}`}
-          >
-            {i + 1}
-          </button>
-        ))}
-      </div>
+      <div className="flex justify-center mt-5 gap-2">
+      {[...Array(totalPages).keys()].map(i => (
+        <button
+          key={i + 1}
+          onClick={() => setCurrentPage(i + 1)}
+          className={`px-4 py-1 rounded-md border transition font-medium cursor-pointer ${
+            currentPage === i + 1
+              ? 'bg-blue-600 text-white shadow'
+              : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-100'
+          }`}
+        >
+          {i + 1}
+        </button>
+      ))}
+    </div>
     </div>
 
     {/* Job Modal */}
     {modalJob && (
-      <div className="fixed inset-0 z-50 flex items-center justify-center backdrop-blur">
-        <div className="bg-white p-6 rounded-lg max-w-lg w-full shadow-lg border border-gray-300 relative">
+      <div className="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-sm px-2">
+        <div className="bg-white rounded-2xl w-full max-w-xl p-6 sm:p-8 shadow-xl relative">
           <button
             onClick={() => setModalJob(null)}
             className="absolute top-2 right-2 text-3xl text-gray-500 hover:text-red-600 font-bold cursor-pointer"
@@ -277,15 +304,15 @@ export default function Dashboard() {
           >
             &times;
           </button>
-          <h3 className="text-2xl font-bold text-gray-800 mb-4">Job Details</h3>
-          <div className="space-y-6 text-sm text-gray-800">
+          <h3 className="text-lg font-bold text-gray-700 border-b pb-1 mb-3">Job Details</h3>
+          <div className="space-y-6 text-md text-gray-800">
             <div>
               <p><strong>Job ID: </strong> {modalJob.jobid || modalJob.id}</p>
               <p><strong>Date: </strong> {formatDate(modalJob.jdate)}</p>
               <p><strong>Location of Service: </strong> {modalJob.loc}</p>
             </div>
             <div>
-              <h4 className="text-lg font-semibold border-b pb-1 mb-2">Customer Details</h4>
+              <h4 className="text-lg font-bold text-gray-700 border-b pb-1 mb-3">Customer Details</h4>
               {modalJob.gstin && <p><strong>GSTIN:</strong> {modalJob.gstin}</p>}
               <p><strong>Name: </strong> {modalJob.customerName}</p>
               <p><strong>POC: </strong> {modalJob.poc}</p>
@@ -293,14 +320,14 @@ export default function Dashboard() {
               <p><strong>City: </strong> {modalJob.city}</p>
             </div>
             <div>
-              <h4 className="text-lg font-semibold border-b pb-1 mb-2">Machine Details</h4>
+              <h4 className="text-lg font-bold text-gray-700 border-b pb-1 mb-3">Machine Details</h4>
               <p><strong>Brand: </strong> {modalJob.brand}</p>
               <p><strong>Model: </strong> {modalJob.model}</p>
               <p><strong>Serial No: </strong> {modalJob.serialNo}</p>
               <p><strong>Call Status: </strong> {modalJob.callStatus || '-'}</p>
             </div>
             <div>
-              <h4 className="text-lg font-semibold border-b pb-1 mb-2">Complaint & Assignment</h4>
+              <h4 className="text-lg font-bold text-gray-700 border-b pb-1 mb-3">Complaint & Assignment</h4>
               <p><strong>Description: </strong> {modalJob.description || '-'}</p>
               <p><strong>Engineer: </strong> {modalJob.engineer || '-'}</p>
               <p><strong>Status: </strong> {modalJob.status}</p>
@@ -317,10 +344,10 @@ export default function Dashboard() {
           </div>
           {role !== "engineer" && (
             <div className="mt-4 flex gap-2">
-              <button onClick={() => window.location.href = `/edit-job/${modalJob.id}`} className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded cursor-pointer">
+              <button onClick={() => window.location.href = `/edit-job/${modalJob.id}`} className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition cursor-pointer">
                 Edit Job
               </button>
-              <button onClick={() => initiateCloseCall(modalJob)} className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded cursor-pointer">
+              <button onClick={() => initiateCloseCall(modalJob)} className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium transition cursor-pointer">
                 Close Call
               </button>
             </div>
@@ -331,8 +358,8 @@ export default function Dashboard() {
 
     {/* Claim Modal */}
     {claimStep && modalJob && (
-  <div className="fixed inset-0 z-50 flex items-center justify-center backdrop-blur">
-    <div className="bg-white p-6 rounded-lg w-full max-w-lg shadow-lg relative border border-gray-300">
+  <div className="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-sm px-2">
+    <div className="bg-white rounded-2xl w-full max-w-xl p-6 sm:p-8 shadow-xl relative">
       <button
         onClick={() => setClaimStep(false)}
         className="absolute top-2 right-2 text-3xl text-gray-500 hover:text-red-600 font-bold cursor-pointer"
@@ -342,7 +369,7 @@ export default function Dashboard() {
       </button>
       <h3 className="text-xl font-bold mb-4 text-gray-800">Any claim for this job?</h3>
 
-      <div className="space-y-4 text-sm text-gray-700">
+      <div className="space-y-4 text-md text-gray-700">
         {/* YES / NO Buttons */}
         <div className="flex gap-4">
           <button
@@ -369,7 +396,7 @@ export default function Dashboard() {
             onChange={(e) =>
               setClaimDetails({ ...claimDetails, invoiceNo: e.target.value })
             }
-            className="w-full border px-3 py-1 rounded"
+            className="w-full border border-gray-300 px-3 py-1 rounded rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-400 transition"
           />
           </>
         )}
@@ -383,7 +410,7 @@ export default function Dashboard() {
                 onChange={(e) =>
                   setClaimDetails({ ...claimDetails, invoiceNo: e.target.value })
                 }
-                className="w-full border px-3 py-1 rounded"
+                className="w-full border border-gray-300 px-3 py-1 rounded rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-400 transition"
               />
             </div>
             <div>
@@ -394,7 +421,7 @@ export default function Dashboard() {
                 onChange={(e) =>
                   setClaimDetails({ ...claimDetails, principal: e.target.value })
                 }
-                className="w-full border px-3 py-1 rounded"
+                className="w-full border border-gray-300 px-3 py-1 rounded rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-400 transition"
               />
             </div>
             <div>
@@ -404,7 +431,7 @@ export default function Dashboard() {
                 onChange={(e) =>
                   setClaimDetails({ ...claimDetails, details: e.target.value })
                 }
-                className="w-full border px-3 py-1 rounded"
+                className="w-full border border-gray-300 rounded-lg px-4 py-2 mt-1 focus:ring-2 focus:ring-blue-400 transition resize-none"
               />
             </div>
           </>
