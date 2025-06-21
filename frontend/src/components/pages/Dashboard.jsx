@@ -120,9 +120,12 @@ export default function Dashboard() {
 
   try {
     const jobRef = doc(db, "jobs", modalJob.id);
-    await updateDoc(jobRef, {
+
+    const updateData = {
       status: "Completed",
       closedAt: serverTimestamp(),
+      ...(modalJob.completedOn ? {} : { completedOn: serverTimestamp() }), // <-- only if not already present
+      ...(claimDetails.invoiceNo && { invoiceNo: claimDetails.invoiceNo }),
       ...(hasClaim && {
         claim: {
           principal: claimDetails.principal,
@@ -131,7 +134,10 @@ export default function Dashboard() {
           remarks: claimDetails.remarks,
         }
       })
-    });
+    };
+
+    await updateDoc(jobRef, updateData);
+
     setModalJob(null);
     setClaimStep(false);
   } catch (err) {
@@ -139,6 +145,7 @@ export default function Dashboard() {
     alert("Failed to close call.");
   }
 };
+
 
 
   const indexOfLastJob = currentPage * jobsPerPage;
