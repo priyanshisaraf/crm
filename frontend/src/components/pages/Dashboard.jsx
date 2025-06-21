@@ -247,103 +247,163 @@ const Dashboard = () => {
           ))}
         </div>
 
-        {modalJob && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center backdrop-blur">
-            <div className="bg-white p-6 rounded-lg max-w-lg w-full shadow-lg border relative">
-              <button
-                onClick={() => setModalJob(null)}
-                className="absolute top-2 right-2 text-3xl text-gray-500 hover:text-red-600 font-bold cursor-pointer"
-              >
-                &times;
-              </button>
-              <h3 className="text-2xl font-bold text-gray-800 mb-4">Job Details</h3>
-              <div className="text-sm text-gray-800 space-y-2">
-                <p><strong>Job ID:</strong> {modalJob.jobid || modalJob.id}</p>
-                <p><strong>Date:</strong> {formatDate(modalJob.jdate)}</p>
-                <p><strong>Customer:</strong> {modalJob.customerName}</p>
-                <p><strong>Status:</strong> {modalJob.status}</p>
-              </div>
-              {role !== "engineer" && (
-                <div className="mt-4 flex gap-2">
-                  <button
-                    onClick={() => window.location.href = `/edit-job/${modalJob.id}`}
-                    className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded"
-                  >
-                    Edit Job
-                  </button>
-                  {(!modalJob.closedAt || modalJob.status !== "Completed") && (
-                    <button
-                      onClick={() => initiateCloseCall(modalJob)}
-                      className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded"
-                    >
-                      Close Call
-                    </button>
-                  )}
-                </div>
-              )}
+    {/* Job Modal */}
+    {modalJob && (
+      <div className="fixed inset-0 z-50 flex items-center justify-center backdrop-blur">
+        <div className="bg-white p-6 rounded-lg max-w-lg w-full shadow-lg border border-gray-300 relative">
+          <button
+            onClick={() => setModalJob(null)}
+            className="absolute top-2 right-2 text-3xl text-gray-500 hover:text-red-600 font-bold cursor-pointer"
+            aria-label="Close Modal"
+          >
+            &times;
+          </button>
+          <h3 className="text-2xl font-bold text-gray-800 mb-4">Job Details</h3>
+          <div className="space-y-6 text-sm text-gray-800">
+            <div>
+              <p><strong>Job ID: </strong> {modalJob.jobid || modalJob.id}</p>
+              <p><strong>Date: </strong> {formatDate(modalJob.jdate)}</p>
+              <p><strong>Location of Service: </strong> {modalJob.loc}</p>
             </div>
+            <div>
+              <h4 className="text-lg font-semibold border-b pb-1 mb-2">Customer Details</h4>
+              {modalJob.gstin && <p><strong>GSTIN:</strong> {modalJob.gstin}</p>}
+              <p><strong>Name: </strong> {modalJob.customerName}</p>
+              <p><strong>POC: </strong> {modalJob.poc}</p>
+              <p><strong>Phone: </strong> {modalJob.phone || modalJob.customerId}</p>
+              <p><strong>City: </strong> {modalJob.city}</p>
+            </div>
+            <div>
+              <h4 className="text-lg font-semibold border-b pb-1 mb-2">Machine Details</h4>
+              <p><strong>Brand: </strong> {modalJob.brand}</p>
+              <p><strong>Model: </strong> {modalJob.model}</p>
+              <p><strong>Serial No: </strong> {modalJob.serialNo}</p>
+              <p><strong>Call Status: </strong> {modalJob.callStatus || '-'}</p>
+            </div>
+            <div>
+              <h4 className="text-lg font-semibold border-b pb-1 mb-2">Complaint & Assignment</h4>
+              <p><strong>Description: </strong> {modalJob.description || '-'}</p>
+              <p><strong>Engineer: </strong> {modalJob.engineer || '-'}</p>
+              <p><strong>Status: </strong> {modalJob.status}</p>
+            {modalJob.notes && (
+                <p><strong>Remarks: </strong>{modalJob.notes}</p>
+            )}
+            {modalJob.spares && (
+                  <p><strong>Spares Used: </strong>{modalJob.spares}</p>
+              )}
+              {modalJob.charges && (
+                  <p><strong>Charges: </strong>₹{modalJob.charges}</p>
+              )}
+              </div>
           </div>
+          {role !== "engineer" && (
+            <div className="mt-4 flex gap-2">
+              <button onClick={() => window.location.href = `/edit-job/${modalJob.id}`} className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded cursor-pointer">
+                Edit Job
+              </button>
+              <button onClick={() => initiateCloseCall(modalJob)} className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded cursor-pointer">
+                Close Call
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+    )}
+
+    {/* Claim Modal */}
+    {claimStep && modalJob && (
+  <div className="fixed inset-0 z-50 flex items-center justify-center backdrop-blur">
+    <div className="bg-white p-6 rounded-lg w-full max-w-lg shadow-lg relative border border-gray-300">
+      <button
+        onClick={() => setClaimStep(false)}
+        className="absolute top-2 right-2 text-3xl text-gray-500 hover:text-red-600 font-bold cursor-pointer"
+        aria-label="Close Claim Modal"
+      >
+        &times;
+      </button>
+      <h3 className="text-xl font-bold mb-4 text-gray-800">Any claim for this job?</h3>
+
+      <div className="space-y-4 text-sm text-gray-700">
+        {/* YES / NO Buttons */}
+        <div className="flex gap-4">
+          <button
+            className={`px-4 py-1 rounded cursor-pointer ${hasClaim === true ? 'bg-blue-600 text-white' : 'bg-gray-200'}`}
+            onClick={() => setHasClaim(true)}
+          >
+            Yes
+          </button>
+          <button
+            className={`px-4 py-1 rounded cursor-pointer ${hasClaim === false ? 'bg-blue-600 text-white' : 'bg-gray-200'}`}
+            onClick={() => setHasClaim(false)}
+          >
+            No
+          </button>
+        </div>
+
+        {/* Conditional Claim Fields */}
+        {!hasClaim && (
+          <>
+          <label>Invoice Number: </label>
+          <input
+            type="text"
+            value={claimDetails.invoiceNo || ''}
+            onChange={(e) =>
+              setClaimDetails({ ...claimDetails, invoiceNo: e.target.value })
+            }
+            className="w-full border px-3 py-1 rounded"
+          />
+          </>
+        )}
+        {hasClaim && (
+          <>
+            <div>
+              <label>Invoice Number: </label>
+              <input
+                type="text"
+                value={claimDetails.invoiceNo || ''}
+                onChange={(e) =>
+                  setClaimDetails({ ...claimDetails, invoiceNo: e.target.value })
+                }
+                className="w-full border px-3 py-1 rounded"
+              />
+            </div>
+            <div>
+              <label>Principal's Name: <span className="text-red-500">*</span></label>
+              <input
+                type="text"
+                value={claimDetails.principal}
+                onChange={(e) =>
+                  setClaimDetails({ ...claimDetails, principal: e.target.value })
+                }
+                className="w-full border px-3 py-1 rounded"
+              />
+            </div>
+            <div>
+              <label>Claim Details: <span className="text-red-500">*</span></label>
+              <textarea
+                value={claimDetails.details}
+                onChange={(e) =>
+                  setClaimDetails({ ...claimDetails, details: e.target.value })
+                }
+                className="w-full border px-3 py-1 rounded"
+              />
+            </div>
+          </>
         )}
 
-        {/* Claim Modal */}
-        {claimStep && modalJob && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center backdrop-blur">
-            <div className="bg-white p-6 rounded-lg w-full max-w-lg shadow-lg relative border">
-              <button onClick={() => setClaimStep(false)} className="absolute top-2 right-2 text-3xl text-gray-500 hover:text-red-600 font-bold cursor-pointer">&times;</button>
-              <h3 className="text-xl font-bold mb-4 text-gray-800">Any claim for this job?</h3>
-              <div className="space-y-4 text-sm text-gray-700">
-                <div className="flex gap-4">
-                  <button
-                    className={`px-4 py-1 rounded cursor-pointer ${hasClaim === true ? 'bg-blue-600 text-white' : 'bg-gray-200'}`}
-                    onClick={() => setHasClaim(true)}
-                  >Yes</button>
-                  <button
-                    className={`px-4 py-1 rounded cursor-pointer ${hasClaim === false ? 'bg-blue-600 text-white' : 'bg-gray-200'}`}
-                    onClick={() => setHasClaim(false)}
-                  >No</button>
-                </div>
-                <div>
-                  <label>Invoice Number: <span className="text-red-500">*</span></label>
-                  <input
-                    type="text"
-                    value={claimDetails.invoiceNo || ''}
-                    onChange={(e) => setClaimDetails({ ...claimDetails, invoiceNo: e.target.value })}
-                    className="w-full border px-3 py-1 rounded"
-                  />
-                </div>
-                {hasClaim && (
-                  <>
-                    <div>
-                      <label>Principal's Name: <span className="text-red-500">*</span></label>
-                      <input
-                        type="text"
-                        value={claimDetails.principal}
-                        onChange={(e) => setClaimDetails({ ...claimDetails, principal: e.target.value })}
-                        className="w-full border px-3 py-1 rounded"
-                      />
-                    </div>
-                    <div>
-                      <label>Claim Details: <span className="text-red-500">*</span></label>
-                      <textarea
-                        value={claimDetails.details}
-                        onChange={(e) => setClaimDetails({ ...claimDetails, details: e.target.value })}
-                        className="w-full border px-3 py-1 rounded"
-                      />
-                    </div>
-                  </>
-                )}
-                <div className="flex justify-end pt-4">
-                  <button onClick={confirmCloseCall} className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded cursor-pointer">
-                    Close Call
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
+        {/* Submit */}
+        <div className="flex justify-end pt-4">
+          <button
+            onClick={confirmCloseCall}
+            className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded cursor-pointer"
+          >
+            Close Call
+          </button>
+        </div>
       </div>
     </div>
-  );
-};
-
-export default Dashboard;
+  </div>
+)}
+  </div>
+);
+}

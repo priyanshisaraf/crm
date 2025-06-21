@@ -30,7 +30,17 @@ export default function CreateJob() {
   });
   
   const [engineerOptions, setEngineerOptions] = useState([]);
+  const [customerOptions, setCustomerOptions] = useState([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  useEffect(() => {
+  const fetchCustomers = async () => {
+    const snapshot = await getDocs(collection(db, 'customers'));
+    const names = snapshot.docs.map(doc => doc.id);
+    setCustomerOptions(names);
+  };
+  fetchCustomers();
+}, []);
 
   useEffect(() => {
     const fetchEngineers = async () => {
@@ -181,7 +191,42 @@ export default function CreateJob() {
       <label className="block text-sm font-medium text-gray-700 mb-1">
         Customer Name <span className="text-red-500">*</span>
       </label>
-      <input name="customerName" value={formData.customerName} onChange={handleChange} className="border px-4 py-2 rounded w-full" />
+      <div className="relative">
+  <input
+    name="customerName"
+    value={formData.customerName}
+    onChange={(e) => {
+      handleChange(e);
+      setShowSuggestions(true);
+    }}
+    onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
+    onFocus={() => setShowSuggestions(true)}
+    className="border px-4 py-2 rounded w-full"
+    autoComplete="off"
+  />
+
+  {showSuggestions && formData.customerName && (
+    <ul className="absolute z-10 w-full bg-white border rounded shadow max-h-48 overflow-y-auto">
+      {customerOptions
+        .filter(name =>
+          name.toLowerCase().includes(formData.customerName.toLowerCase())
+        )
+        .map((name, idx) => (
+          <li
+            key={idx}
+            onClick={() => {
+              setFormData(prev => ({ ...prev, customerName: name }));
+              setShowSuggestions(false);
+            }}
+            className="px-4 py-2 cursor-pointer hover:bg-gray-100"
+          >
+            {name}
+          </li>
+        ))}
+    </ul>
+  )}
+</div>
+
     </div>
     <div>
       <label className="block text-sm font-medium text-gray-700 mb-1">

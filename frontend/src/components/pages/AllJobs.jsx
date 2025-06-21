@@ -12,6 +12,9 @@ export default function AllJobs() {
   const [endDate, setEndDate] = useState('');
   const [showClosedOnly, setShowClosedOnly] = useState(false);
   const [engineerOptions, setEngineerOptions] = useState([]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const jobsPerPage = 50;
+
     const formatDate = (dateStr) => {
     if (!dateStr) return '-';
     const date = new Date(dateStr);
@@ -53,32 +56,69 @@ const formatTimestamp = (timestamp) => {
     fetchJobs();
   }, []);
 
-  const filteredJobs = jobs.filter(job => {
-    const jobDate = job.jdate ? new Date(job.jdate) : null;
-    const start = startDate ? new Date(startDate) : null;
-    const end = endDate ? new Date(endDate + 'T23:59:59') : null;
+    const filteredJobs = jobs.filter(job => {
+  const jobDate = job.jdate ? new Date(job.jdate) : null;
+  const start = startDate ? new Date(startDate) : null;
+  const end = endDate ? new Date(endDate + 'T23:59:59') : null;
 
-    return (
-      (!engineerFilter || (job.engineer || '').toLowerCase() === engineerFilter.toLowerCase()) &&
-      (!statusFilter || job.status === statusFilter) &&
-      (!start || (jobDate && jobDate >= start)) &&
-      (!end || (jobDate && jobDate <= end)) &&
-      (!showClosedOnly || job.closedAt)
-    );
-  });
+  return (
+    (!engineerFilter || (job.engineer || '').toLowerCase() === engineerFilter.toLowerCase()) &&
+    (!statusFilter || job.status === statusFilter) &&
+    (!start || (jobDate && jobDate >= start)) &&
+    (!end || (jobDate && jobDate <= end)) &&
+    (!showClosedOnly || job.closedAt)
+  );
+});
+  const indexOfLastJob = currentPage * jobsPerPage;
+const indexOfFirstJob = indexOfLastJob - jobsPerPage;
+const currentJobs = filteredJobs.slice(indexOfFirstJob, indexOfLastJob);
 
   const handleExportCSV = () => {
-  const headers = ["Job ID", "Customer", "Phone", "Engineer", "Status", "Date", "Closed On"];
+  const headers = [
+  "Job ID",
+  "Date",
+  "Customer Name",
+  "POC",
+  "Phone",
+  "Engineer",
+  "City",
+  "Brand",
+  "Model",
+  "Serial No",
+  "Call Status",
+  "Complaint/Description",
+  "Status",
+  "Completed On",
+  "Remarks",
+  "Spares",
+  "Service Charges",
+  "Invoice No",
+  "Closed On"
+];
+
+
   const rows = filteredJobs.map(job => [
     job.jobid || job.id,
+    formatDate(job.jdate) || '-',
     job.customerName || '-',
     job.poc || '-',
     job.phone || '-',
     job.engineer || '-',
-    job.status,
-    job.jdate || '-',
-    job.closedAt ? new Date(job.closedAt.seconds * 1000).toLocaleDateString() : '-'
+    job.city || '-',
+    job.brand || '-',
+    job.model || '-',
+    job.serialNo || '-',
+    job.callStatus || '-',
+    job.description || job.complaint || '-',
+    job.status || '-',
+    job.completedOn ? formatTimestamp(job.completedOn) : '-',
+    job.notes || '-',         
+    job.spares || '-',
+    job.charges || '-',
+    job.invoiceNo || '-',
+    job.closedAt ? formatTimestamp(job.closedAt) : '-',
   ]);
+
   const csvContent = [headers, ...rows].map(e => e.join(",")).join("\n");
   const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
   const link = document.createElement("a");
@@ -90,6 +130,7 @@ const formatTimestamp = (timestamp) => {
   link.download = fileName;
   link.click();
 };
+
 
 
   return (
@@ -166,7 +207,7 @@ const formatTimestamp = (timestamp) => {
               </tr>
             </thead>
             <tbody>
-              {filteredJobs.map(job => (
+              {currentJobs.map(job => (
                 <tr key={job.id}>
                   <td className="p-2 border">
                 <span
@@ -248,6 +289,18 @@ const formatTimestamp = (timestamp) => {
         </div>
       </div>
     )}
+    <div className="flex justify-center mt-4 space-x-2">
+  {[...Array(Math.ceil(filteredJobs.length / jobsPerPage)).keys()].map(i => (
+    <button
+      key={i + 1}
+      onClick={() => setCurrentPage(i + 1)}
+      className={`px-3 py-1 rounded cursor-pointer ${currentPage === i + 1 ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700'}`}
+    >
+      {i + 1}
+    </button>
+  ))}
+</div>
+
     </div>
   );
 }
