@@ -134,7 +134,12 @@ const headingStyle = {
             >
             {/* Job Info */}
             <div className="mb-4">
-              <h2 className="text-lg font-semibold text-purple-700 mb-2">Job Information</h2>
+              <h2 className={`text-lg font-semibold mb-2 ${
+                  job.status === "Completed" ? "text-green-700 focus:ring-2 focus:ring-green-800 transition " :
+                  job.status === "In Progress" ? "text-yellow-700 focus:ring-2 focus:ring-yellow-800 transition " :
+                  job.status === "Approval Pending" ? "text-blue-700 focus:ring-2 focus:ring-blue-800 transition " :
+                  "text-red-700 focus:ring-2 focus:ring-red-800 transition "
+                }`}>Job Information</h2>
               <div className="flex flex-wrap gap-x-8 gap-y-1">
                 <p><strong>Job ID:</strong> {job.id}</p>
                 <p><strong>Date:</strong> {formatDate(job.jdate)}</p>
@@ -144,7 +149,12 @@ const headingStyle = {
 
             {/* Customer Details */}
             <div className="mb-4">
-              <h2 className="text-lg font-semibold text-purple-700 mb-2">Customer Details</h2>
+              <h2 className={`text-lg font-semibold mb-2 ${
+                  job.status === "Completed" ? "text-green-700 focus:ring-2 focus:ring-green-800 transition" :
+                  job.status === "In Progress" ? "text-yellow-700 focus:ring-2 focus:ring-yellow-800 transition" :
+                  job.status === "Approval Pending" ? "text-blue-700 focus:ring-2 focus:ring-blue-800 transition" :
+                  "text-red-700 focus:ring-2 focus:ring-red-800 transition"
+                }`}>Customer Details</h2>
               <div className="flex flex-wrap gap-x-8 gap-y-1">
                 <p><strong>Customer:</strong> {job.customerName}</p>
                 <p><strong>POC:</strong> {job.poc}</p>
@@ -155,7 +165,12 @@ const headingStyle = {
 
             {/* Machine Details */}
             <div className="mb-4">
-              <h2 className="text-lg font-semibold text-purple-700 mb-2">Machine Details</h2>
+              <h2 className={`text-lg font-semibold mb-2 ${
+                  job.status === "Completed" ? "text-green-700 focus:ring-2 focus:ring-green-800 transition" :
+                  job.status === "In Progress" ? "text-yellow-700 focus:ring-2 focus:ring-yellow-800 transition " :
+                  job.status === "Approval Pending" ? "text-blue-700 focus:ring-2 focus:ring-blue-800 transition" :
+                  "text-red-700 focus:ring-2 focus:ring-red-800 transition"
+                }`}>Machine Details</h2>
               <div className="flex flex-wrap gap-x-8 gap-y-1">
                 <p><strong>Brand:</strong> {job.brand}</p>
                 <p><strong>Model:</strong> {job.model}</p>
@@ -166,7 +181,12 @@ const headingStyle = {
 
             {/* Complaint & Assignment */}
             <div className="mb-4">
-              <h2 className="text-lg font-semibold text-purple-700 mb-2">Complaint & Assignment</h2>
+              <h2 className={`text-lg font-semibold mb-2 ${
+                  job.status === "Completed" ? "text-green-700 focus:ring-2 focus:ring-green-800 transition" :
+                  job.status === "In Progress" ? "text-yellow-700 focus:ring-2 focus:ring-yellow-800 transition" :
+                  job.status === "Approval Pending" ? "text-blue-700 focus:ring-2 focus:ring-blue-800 transition" :
+                  "text-red-700 focus:ring-2 focus:ring-red-800 transition"
+                }`}>Complaint & Assignment</h2>
               <div className="gap-x-8 gap-y-1">
                 <p><strong>Complaint:</strong> {job.complaint || "-"}</p>
                 <p><strong>Assigned Engineer:</strong> {job.engineer}</p>
