@@ -3,7 +3,7 @@ import { collection, getDocs } from "firebase/firestore";
 import { db } from "../../firebase/firebaseConfig";
 import { useNavigate } from "react-router-dom";
 import { CSVLink } from "react-csv";
-import Navbar from "../layouts/Navbar";
+import Navbar from "../layouts/NavBar";
 export default function CustomersPage() {
   const [customers, setCustomers] = useState([]);
   const navigate = useNavigate();

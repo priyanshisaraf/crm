@@ -14,7 +14,6 @@ import { db } from '../../firebase/firebaseConfig';
 export default function CreateJob() {
   const [formData, setFormData] = useState({
     jobid: '',
-    gstin: '',
     loc: '',
     customerName: '',
     phone: '',
@@ -115,7 +114,6 @@ export default function CreateJob() {
       alert(`✅ Job created successfully! ID: ${jobRef.id}`);
       setFormData({
         jobid: '',
-        gstin: '',
         loc: '',
         customerName: '',
         phone: '',
