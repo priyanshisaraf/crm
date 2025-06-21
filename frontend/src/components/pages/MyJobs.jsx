@@ -19,7 +19,7 @@ const MyJobs = () => {
     const yyyy = date.getFullYear();
     return `${dd}-${mm}-${yyyy}`;
   };
-
+  
   const handleSaveJob = async (job) => {
     try {
       const jobRef = doc(db, "jobs", job.id);
@@ -50,6 +50,13 @@ const MyJobs = () => {
 
     return () => unsubscribe();
   }, [currentUser]);
+const headingStyle = {
+  marginBottom: '8px',
+  fontSize: '1em',
+  fontWeight: 'bold',
+  borderBottom: '1px solid #eee',
+  paddingBottom: '4px'
+};
 
   const updateField = async (id, field, value) => {
     const jobRef = doc(db, "jobs", id);
@@ -224,24 +231,87 @@ const MyJobs = () => {
             </div>
             {/* Hidden Printable PDF */}
             <div id={`job-pdf-${job.id}`} style={{ display: "none" }}>
-              <div style={{ width: '794px', padding: '24px', fontFamily: 'Arial, sans-serif', backgroundColor: '#fff' }}>
-                <h2>Job Details</h2>
-                <p><strong>Job ID:</strong> {job.id}</p>
-                <p><strong>Customer:</strong> {job.customerName}</p>
-                <p><strong>Date:</strong> {job.date}</p>
-                <p><strong>Invoice Number:</strong> {job.invoiceNumber}</p>
-                <p><strong>GSTIN:</strong> {job.gstin}</p>
-                <p><strong>Phone:</strong> {job.phone}</p>
-                <p><strong>City:</strong> {job.city}</p>
-                <p><strong>POC:</strong> {job.poc}</p>
-                <p><strong>Brand:</strong> {job.brand}</p>
-                <p><strong>Model:</strong> {job.model}</p>
-                <p><strong>Serial No:</strong> {job.serialNo}</p>
-                <p><strong>Call Status:</strong> {job.callStatus}</p>
-                <p><strong>Complaint:</strong> {job.complaint}</p>
-                <p><strong>Assigned Engineer:</strong> {job.assignedEngineer}</p>
-                <p><strong>Spares Required:</strong> {job.spares}</p>
-                <p><strong>Service Charges:</strong> ₹ {job.charges}</p>
+              <div style={{
+                maxWidth: '100%',
+                margin: '0 auto',
+                padding: '10px',
+                fontFamily: 'Arial, sans-serif',
+                backgroundColor: '#fff',
+                paddingLeft: '10%',
+                paddingRight: '10%',
+                color: '#000',
+                fontSize: '10px',
+                lineHeight: '1.5',
+                border: '1px solid #ccc',
+                boxSizing: 'border-box'
+              }}>
+
+                {/* Header with logo and title */}
+                <div style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  borderBottom: '1px solid #ddd',
+                  paddingBottom: '10px',
+                  marginBottom: '10px'
+                }}>
+                  <img
+                    src="/SE Logo.png"
+                    alt="Company Logo"
+                    style={{ height: '40px' }}
+                  />
+                  <div style={{ fontSize: '1.2em', fontWeight: 'bold' }}>
+                    Service Job Report
+                  </div>
+                </div>
+
+                {/* Job Summary */}
+                <div style={{ marginBottom: '10px' }}>
+                  <h3 style={headingStyle}>Job Summary</h3>
+                  <p><strong>Job ID:</strong> {job.id}</p>
+                  <p><strong>Date:</strong> {formatDate(job.jdate)}</p>
+                  <p><strong>Status:</strong> {job.status}</p>
+                </div>
+
+                {/* Customer Details */}
+                <div style={{ marginBottom: '10px' }}>
+                  <h3 style={headingStyle}>Customer Details</h3>
+                  <p><strong>Customer:</strong> {job.customerName}</p>
+                  <p><strong>POC:</strong> {job.poc}</p>
+                  <p><strong>Phone:</strong> {job.phone}</p>
+                  <p><strong>City:</strong> {job.city}</p>
+                  <p><strong>GSTIN:</strong> {job.gstin || 'N/A'}</p>
+                </div>
+
+                {/* Machine Info */}
+                <div style={{ marginBottom: '10px' }}>
+                  <h3 style={headingStyle}>Machine Information</h3>
+                  <p><strong>Brand:</strong> {job.brand}</p>
+                  <p><strong>Model:</strong> {job.model}</p>
+                  <p><strong>Serial No:</strong> {job.serialNo}</p>
+                  <p><strong>Call Status:</strong> {job.callStatus || 'N/A'}</p>
+                </div>
+
+                {/* Service Report */}
+                <div style={{ marginBottom: '10px' }}>
+                  <h3 style={headingStyle}>Service Report</h3>
+                  <p><strong>Complaint:</strong> {job.complaint || '-'}</p>
+                  <p><strong>Engineer:</strong> {job.engineer}</p>
+                  <p><strong>Spares Used:</strong> {job.spares || '-'}</p>
+                  <p><strong>Service Charges:</strong> ₹ {job.charges || '0.00'} <small>(GST extra if applicable)</small></p>
+                </div>
+
+                {/* Footer */}
+                <div style={{
+                  marginTop: '20px',
+                  fontSize: '0.85em',
+                  textAlign: 'center',
+                  color: '#777',
+                  borderTop: '1px solid #ddd',
+                  paddingTop: '10px'
+                }}>
+                  This document is system-generated and does not require a signature.
+                </div>
               </div>
             </div>
           </div>

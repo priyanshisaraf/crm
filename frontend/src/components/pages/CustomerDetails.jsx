@@ -3,6 +3,7 @@ import { collection, getDocs, query, where } from "firebase/firestore";
 import { db } from "../../firebase/firebaseConfig";
 import { useEffect, useState } from "react";
 import { CSVLink } from "react-csv";
+import NavBar from '../layouts/NavBar';
 
 export default function CustomerDetails() {
   const { id } = useParams(); 
@@ -82,7 +83,9 @@ export default function CustomerDetails() {
 
   return (
     <div className="min-h-screen bg-gray-100">
-    <div className="max-w-screen-xl mx-auto py-8">
+      <NavBar />
+      <div className="max-w-screen-2xl mx-auto px-4 py-6">
+    <div className="max-w-screen-xl mx-auto">
       {customer && (
         <div className="mb-6">
           <h2 className="text-2xl font-bold mb-2">{customer.name}</h2>
@@ -212,6 +215,7 @@ export default function CustomerDetails() {
           </div>
         </div>
       )}
+    </div>
     </div>
   );
 }
