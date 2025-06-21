@@ -41,8 +41,8 @@ export default function AppRouter() {
         <Route element={<RoleBasedRoute allowedRoles={["engineer"]} />}>
           <Route path="/my-jobs" element={<MyJobs />} />
         </Route>
-        {/* Coordinator Only */}
-        <Route element={<RoleBasedRoute allowedRoles={["coordinator"]} />}>
+        {/* Coordinator and owner */}
+        <Route element={<RoleBasedRoute allowedRoles={["coordinator", "owner"]} />}>
           <Route path="/create-job" element={<CreateJob />} />
         </Route>
 

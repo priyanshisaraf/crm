@@ -14,7 +14,6 @@ import { db } from '../../firebase/firebaseConfig';
 export default function CreateJob() {
   const [formData, setFormData] = useState({
     jobid: '',
-    gstin: '',
     loc: '',
     customerName: '',
     phone: '',
@@ -115,7 +114,6 @@ export default function CreateJob() {
       alert(`✅ Job created successfully! ID: ${jobRef.id}`);
       setFormData({
         jobid: '',
-        gstin: '',
         loc: '',
         customerName: '',
         phone: '',
@@ -208,21 +206,22 @@ export default function CreateJob() {
   {showSuggestions && formData.customerName && (
     <ul className="absolute z-10 w-full bg-white border rounded shadow max-h-48 overflow-y-auto">
       {customerOptions
-        .filter(name =>
-          name.toLowerCase().includes(formData.customerName.toLowerCase())
-        )
-        .map((name, idx) => (
-          <li
-            key={idx}
-            onClick={() => {
-              setFormData(prev => ({ ...prev, customerName: name }));
-              setShowSuggestions(false);
-            }}
-            className="px-4 py-2 cursor-pointer hover:bg-gray-100"
-          >
-            {name}
-          </li>
-        ))}
+  .filter(name =>
+    name.toLowerCase().includes(formData.customerName.toLowerCase())
+  )
+  .map((name, idx) => (
+    <li
+      key={idx}
+      onMouseDown={() => {
+        setFormData(prev => ({ ...prev, customerName: name }));
+        setShowSuggestions(false);
+      }}
+      className="px-4 py-2 cursor-pointer hover:bg-gray-100"
+    >
+      {name}
+    </li>
+  ))}
+
     </ul>
   )}
 </div>
