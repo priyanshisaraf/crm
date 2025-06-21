@@ -7,7 +7,7 @@ export default function Navbar() {
   if (!currentUser || !role) return null;
 
   return (
-    <nav className="bg-white shadow-md px-4 py-3 flex flex-col space-y-2">
+    <nav className="bg-white shadow-md px-4 py-3 flex flex-col space-y-2 sticky top-0 z-50">
       {/* Top Row: Logo */}
       <div className="flex items-center">
         <Link to="/">
