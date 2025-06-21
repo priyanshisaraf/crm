@@ -4,6 +4,8 @@ import { db } from '../../firebase/firebaseConfig';
 import Navbar from '../layouts/NavBar';
 
 export default function AllJobs() {
+  const [loadingJobs, setLoadingJobs] = useState(true);
+  const [loadingEngineers, setLoadingEngineers] = useState(true);
   const [jobs, setJobs] = useState([]);
   const [modalJob, setModalJob] = useState(null);
   const [engineerFilter, setEngineerFilter] = useState('');
@@ -41,26 +43,30 @@ const statusTextColors = {
 
   useEffect(() => {
     const fetchEngineers = async () => {
-      const q = query(
-        collection(db, 'users'),
-        where('role', '==', 'engineer'),
-        where('isRegistered', '==', true)
-      );
-      const snapshot = await getDocs(q);
-      const emails = snapshot.docs.map(doc => doc.data().email);
-      setEngineerOptions(emails);
-    };
+  setLoadingEngineers(true);
+  const q = query(
+    collection(db, 'users'),
+    where('role', '==', 'engineer'),
+    where('isRegistered', '==', true)
+  );
+  const snapshot = await getDocs(q);
+  const emails = snapshot.docs.map(doc => doc.data().email);
+  setEngineerOptions(emails);
+  setLoadingEngineers(false);
+};
     fetchEngineers();
   }, []);
 
 
   useEffect(() => {
     const fetchJobs = async () => {
-      const q = query(collection(db, "jobs"));
-      const snapshot = await getDocs(q);
-      const list = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      setJobs(list);
-    };
+  setLoadingJobs(true);
+  const q = query(collection(db, "jobs"));
+  const snapshot = await getDocs(q);
+  const list = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+  setJobs(list);
+  setLoadingJobs(false);
+};
     fetchJobs();
   }, []);
 
@@ -146,79 +152,87 @@ return (
       <h1 className="text-2xl font-bold mb-6 text-gray-800">All Jobs - Full History</h1>
 
       {/* Filters */}
-<div className="flex flex-col sm:flex-wrap sm:flex-row gap-4 mb-6 justify-between items-start sm:items-center">
-  {/* Date Row */}
-  <div className="flex flex-row gap-4 w-full sm:w-auto">
-    <label className="text-sm text-gray-600 flex items-center gap-2 w-full sm:w-auto">
-      Start:
-      <input
-        type="date"
-        value={startDate}
-        onChange={(e) => setStartDate(e.target.value)}
-        className="w-full sm:w-auto border border-gray-300 px-3 py-1 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-400 transition cursor-pointer"
-      />
-    </label>
-    <label className="text-sm text-gray-600 flex items-center gap-2 w-full sm:w-auto">
-      End:
-      <input
-        type="date"
-        value={endDate}
-        onChange={(e) => setEndDate(e.target.value)}
-        className="w-full sm:w-auto border border-gray-300 px-3 py-1 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-400 transition cursor-pointer"
-      />
-    </label>
+<fieldset
+  disabled={loadingJobs || loadingEngineers}
+  className={`mb-6 ${loadingJobs || loadingEngineers ? 'opacity-50 pointer-events-none' : ''}`}
+>
+  <div className="flex flex-col sm:flex-wrap sm:flex-row gap-4 justify-between items-start sm:items-center">
+    {/* Date Row */}
+    <div className="flex flex-row gap-4 w-full sm:w-auto">
+      <label className="text-sm text-gray-600 flex items-center gap-2 w-full sm:w-auto">
+        Start:
+        <input
+          type="date"
+          value={startDate}
+          onChange={(e) => setStartDate(e.target.value)}
+          className="w-full sm:w-auto border border-gray-300 px-3 py-1 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-400 transition cursor-pointer"
+        />
+      </label>
+      <label className="text-sm text-gray-600 flex items-center gap-2 w-full sm:w-auto">
+        End:
+        <input
+          type="date"
+          value={endDate}
+          onChange={(e) => setEndDate(e.target.value)}
+          className="w-full sm:w-auto border border-gray-300 px-3 py-1 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-400 transition cursor-pointer"
+        />
+      </label>
+    </div>
+
+    <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto items-start sm:items-center">
+      {/* Dropdowns */}
+      <div className="flex flex-row gap-4 w-full sm:w-auto">
+        <select
+          value={engineerFilter}
+          onChange={(e) => setEngineerFilter(e.target.value)}
+          className="w-full sm:w-auto border border-gray-300 px-3 py-1 rounded-lg text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-400 transition cursor-pointer"
+        >
+          <option value="">All Engineers</option>
+          {engineerOptions.map((email, idx) => (
+            <option key={idx} value={email}>{email}</option>
+          ))}
+        </select>
+
+        <select
+          value={statusFilter}
+          onChange={(e) => setStatusFilter(e.target.value)}
+          className="w-full sm:w-auto border border-gray-300 px-3 py-1 rounded-lg text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-400 transition cursor-pointer"
+        >
+          <option value="">All Open</option>
+          <option value="Not Inspected">Not Inspected</option>
+          <option value="Approval Pending">Approval Pending</option>
+          <option value="In Progress">In Progress</option>
+          <option value="Completed">Completed</option>
+        </select>
+      </div>
+
+      {/* Checkbox + Export */}
+      <div className="flex flex-wrap items-center gap-3">
+        <label className="flex items-center text-sm text-gray-600">
+          <input
+            type="checkbox"
+            checked={showClosedOnly}
+            onChange={() => setShowClosedOnly(prev => !prev)}
+            className="scale-125 mr-1 cursor-pointer border-gray-300 rounded focus:ring-blue-400 transition"
+          />
+          Closed Calls Only
+        </label>
+
+        <button
+          onClick={handleExportCSV}
+          className="bg-green-600 text-white px-3 py-1 rounded-lg shadow hover:bg-green-700 transition"
+        >
+          Export CSV
+        </button>
+      </div>
+    </div>
   </div>
-<div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto items-start sm:items-center">
-  {/* Dropdowns */}
-  <div className="flex flex-row gap-4 w-full sm:w-auto">
-    <select
-      value={engineerFilter}
-      onChange={(e) => setEngineerFilter(e.target.value)}
-      className="w-full sm:w-auto border border-gray-300 px-3 py-1 rounded-lg text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-400 transition cursor-pointer"
-    >
-      <option value="">All Engineers</option>
-      {engineerOptions.map((email, idx) => (
-        <option key={idx} value={email}>{email}</option>
-      ))}
-    </select>
-
-    <select
-      value={statusFilter}
-      onChange={(e) => setStatusFilter(e.target.value)}
-      className="w-full sm:w-auto border border-gray-300 px-3 py-1 rounded-lg text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-400 transition cursor-pointer"
-    >
-      <option value="">All Open</option>
-      <option value="Not Inspected">Not Inspected</option>
-      <option value="Approval Pending">Approval Pending</option>
-      <option value="In Progress">In Progress</option>
-      <option value="Completed">Completed</option>
-    </select>
-  </div>
-
-  {/* Checkbox + Export */}
-  <div className="flex flex-wrap items-center gap-3">
-    <label className="flex items-center text-sm text-gray-600">
-      <input
-        type="checkbox"
-        checked={showClosedOnly}
-        onChange={() => setShowClosedOnly(prev => !prev)}
-        className="scale-125 mr-1 cursor-pointer border-gray-300 rounded focus:ring-blue-400 transition"
-      />
-      Closed Calls Only
-    </label>
-
-    <button
-      onClick={handleExportCSV}
-      className="bg-green-600 text-white px-3 py-1 rounded-lg shadow hover:bg-green-700 transition"
-    >
-      Export CSV
-    </button>
-  </div>
-</div>
-</div>
-
+</fieldset>
 
       {/* Table */}
+    {loadingJobs ? (
+      <div className="p-8 text-center text-gray-500 italic">Loading jobs...</div>
+    ) : (
       <div className="overflow-x-auto rounded-xl border shadow-sm bg-white">
         <table className="min-w-full text-sm text-left text-gray-700">
           <thead className="bg-gray-100 text-sm text-gray-500 uppercase">
@@ -269,7 +283,7 @@ return (
           </tbody>
         </table>
       </div>
-
+    )}
       {/* Pagination */}
       <div className="flex justify-center mt-6 gap-2">
         {[...Array(Math.ceil(filteredJobs.length / jobsPerPage)).keys()].map(i => (

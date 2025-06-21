@@ -6,6 +6,7 @@ import { CSVLink } from "react-csv";
 import Navbar from "../layouts/NavBar";
 
 export default function CustomersPage() {
+  const [loading, setLoading] = useState(true);
   const [customers, setCustomers] = useState([]);
   const navigate = useNavigate();
   const [currentPage, setCurrentPage] = useState(1);
@@ -17,10 +18,12 @@ export default function CustomersPage() {
 
   useEffect(() => {
     async function fetchCustomers() {
-      const snapshot = await getDocs(collection(db, "customers"));
-      const data = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
-      setCustomers(data);
-    }
+  setLoading(true);
+  const snapshot = await getDocs(collection(db, "customers"));
+  const data = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+  setCustomers(data);
+  setLoading(false);
+}
     fetchCustomers();
   }, []);
 
@@ -41,7 +44,9 @@ export default function CustomersPage() {
             Export to CSV
           </CSVLink>
         </div>
-
+        {loading ? (
+          <div className="py-10 text-center text-gray-500 italic">Loading customers...</div>
+        ) : (
         <div className="overflow-x-auto rounded-xl border shadow-sm bg-white">
           <table className="min-w-full text-sm text-left text-gray-700">
             <thead className="bg-gray-100 text-md text-gray-500 uppercase">
@@ -74,7 +79,7 @@ export default function CustomersPage() {
             </tbody>
           </table>
         </div>
-
+        )}
         {/* Pagination */}
         <div className="flex justify-center mt-6 gap-2">
           {[...Array(totalPages).keys()].map((i) => (

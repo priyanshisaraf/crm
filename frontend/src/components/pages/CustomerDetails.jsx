@@ -6,6 +6,8 @@ import { CSVLink } from "react-csv";
 import NavBar from '../layouts/NavBar';
 
 export default function CustomerDetails() {
+  const [loadingCustomer, setLoadingCustomer] = useState(true);
+  const [loadingJobs, setLoadingJobs] = useState(true);
   const { id } = useParams(); 
   const [customer, setCustomer] = useState(null);
   const [jobs, setJobs] = useState([]);
@@ -36,32 +38,30 @@ export default function CustomerDetails() {
   // Fetch customer by customerName (document ID)
   useEffect(() => {
     async function fetchCustomer() {
-      const custSnap = await getDocs(
-        query(collection(db, "customers"), where("__name__", "==", id))
-      );
-      if (!custSnap.empty) {
-        setCustomer(custSnap.docs[0].data());
-      }
+    setLoadingCustomer(true);
+    const custSnap = await getDocs(
+      query(collection(db, "customers"), where("__name__", "==", id))
+    );
+    if (!custSnap.empty) {
+      setCustomer(custSnap.docs[0].data());
     }
+    setLoadingCustomer(false);
+  }
     fetchCustomer();
   }, [id]);
 
   // When customer is loaded, fetch jobs where customerId == customerName
   useEffect(() => {
   async function fetchJobs() {
-    if (!customer?.name) {
-      console.log("No Customer found yet.");
-      return;
-    }
-    const jobsSnap = await getDocs(
-      query(collection(db, "jobs"), where("customerName", "==", customer.name))
-    );
-
-    const jobsData = jobsSnap.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
-
-    setJobs(jobsData);
-  }
-
+  if (!customer?.name) return;
+  setLoadingJobs(true);
+  const jobsSnap = await getDocs(
+    query(collection(db, "jobs"), where("customerName", "==", customer.name))
+  );
+  const jobsData = jobsSnap.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+  setJobs(jobsData);
+  setLoadingJobs(false);
+}
   fetchJobs();
 }, [customer?.name]);
 
@@ -86,12 +86,13 @@ export default function CustomerDetails() {
       <NavBar />
       <div className="max-w-screen-2xl mx-auto px-4 py-6">
     <div className="max-w-screen-xl mx-auto">
-      {customer && (
-        <div className="mb-6">
-          <h2 className="text-2xl font-bold mb-2">{customer.name}</h2>
-        </div>
-      )}
-
+      <div className="mb-6">
+        {loadingCustomer ? (
+          <div className="h-6 w-48 bg-gray-300 animate-pulse rounded"></div>
+        ) : (
+          <h2 className="text-2xl font-bold mb-2">{customer?.name}</h2>
+        )}
+      </div>
       <div className="flex justify-between items-center mb-4">
         <h3 className="text-xl font-semibold">Jobs</h3>
         <CSVLink
@@ -121,13 +122,19 @@ export default function CustomerDetails() {
       </tr>
     </thead>
     <tbody>
-      {jobs.length === 0 ? (
-        <tr>
-          <td colSpan="10" className="p-4 text-center text-gray-400 italic">
-            No jobs found for this customer.
-          </td>
-        </tr>
-      ) : (
+      {loadingJobs ? (
+  <tr>
+    <td colSpan="10" className="p-4 text-center text-gray-400 italic">
+      Loading jobs...
+    </td>
+  </tr>
+          ) : jobs.length === 0 ? (
+            <tr>
+              <td colSpan="10" className="p-4 text-center text-gray-400 italic">
+                No jobs found for this customer.
+              </td>
+            </tr>
+          ) : (
         jobs.map((job) => (
           <tr key={job.jobid} className="hover:bg-gray-50 transition">
             <td className="p-3 border">
