@@ -112,7 +112,7 @@ const MyJobs = () => {
         className="mb-5 p-1 border rounded"
       >
         <option value="All">All</option>
-        <option value="Not inspected">Not Inspected</option>
+        <option value="Not Inspected">Not Inspected</option>
         <option value="In Progress">In Progress</option>
         <option value="Approval Pending">Approval Pending</option>
         <option value="Completed">Completed</option>
@@ -177,7 +177,7 @@ const MyJobs = () => {
                   "text-red-700"
                 }`}
               >
-                <option value="Not inspected">Not inspected</option>
+                <option value="Not Inspected">Not Inspected</option>
                 <option value="In Progress">In Progress</option>
                 <option value="Approval Pending">Approval Pending</option>
                 <option value="Completed">Completed</option>

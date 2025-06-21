@@ -3,10 +3,17 @@ import { collection, getDocs } from "firebase/firestore";
 import { db } from "../../firebase/firebaseConfig";
 import { useNavigate } from "react-router-dom";
 import { CSVLink } from "react-csv";
-
+import Navbar from "../layouts/Navbar";
 export default function CustomersPage() {
   const [customers, setCustomers] = useState([]);
   const navigate = useNavigate();
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10; 
+  const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  const currentItems = customers.slice(indexOfFirstItem, indexOfLastItem);
+  const totalPages = Math.ceil(customers.length / itemsPerPage); 
+
 
   useEffect(() => {
     async function fetchCustomers() {
@@ -23,7 +30,9 @@ export default function CustomersPage() {
 
 
   return (
-    <div className="max-w-screen-xl mx-auto py-8">
+    <div className="min-h-screen bg-gray-100">
+      <Navbar />
+    <div className="max-w-screen-2xl mx-auto px-4 py-6">
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-2xl font-bold">Customers</h2>
         <CSVLink
@@ -43,7 +52,7 @@ export default function CustomersPage() {
           </tr>
         </thead>
         <tbody>
-          {customers.map((c) => (
+          {currentItems.map((c) => (
             <tr key={c.id} className="border-t">
               <td className="p-2">{c.name}</td>
               <td className="p-2">
@@ -58,6 +67,19 @@ export default function CustomersPage() {
           ))}
         </tbody>
       </table>
+      {/* Pagination */}
+      <div className="flex justify-center mt-4 space-x-2">
+        {[...Array(totalPages).keys()].map(i => (
+          <button
+            key={i + 1}
+            onClick={() => setCurrentPage(i + 1)}
+            className={`px-3 py-1 rounded cursor-pointer ${currentPage === i + 1 ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700'}`}
+          >
+            {i + 1}
+          </button>
+        ))}
+      </div>
+    </div>
     </div>
   );
 }

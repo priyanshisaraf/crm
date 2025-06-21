@@ -276,7 +276,6 @@ export default function Dashboard() {
               <p><strong>Job ID: </strong> {modalJob.jobid || modalJob.id}</p>
               <p><strong>Date: </strong> {formatDate(modalJob.jdate)}</p>
               <p><strong>Location of Service: </strong> {modalJob.loc}</p>
-              {modalJob.invoiceNo && <p><strong>Invoice No:</strong> {modalJob.invoiceNo}</p>}
             </div>
             <div>
               <h4 className="text-lg font-semibold border-b pb-1 mb-2">Customer Details</h4>
@@ -356,7 +355,7 @@ export default function Dashboard() {
         {/* Conditional Claim Fields */}
         {!hasClaim && (
           <>
-          <label>Invoice Number: <span className="text-red-500">*</span></label>
+          <label>Invoice Number: </label>
           <input
             type="text"
             value={claimDetails.invoiceNo || ''}
@@ -370,7 +369,7 @@ export default function Dashboard() {
         {hasClaim && (
           <>
             <div>
-              <label>Invoice Number: <span className="text-red-500">*</span></label>
+              <label>Invoice Number: </label>
               <input
                 type="text"
                 value={claimDetails.invoiceNo || ''}
