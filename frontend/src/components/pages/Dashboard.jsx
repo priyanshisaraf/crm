@@ -35,10 +35,8 @@ const Dashboard = () => {
     "Not Inspected",
     "Approval Pending",
     "In Progress",
-    "Completed (Not Closed)",
-    "Completed (Closed)",
+    "Completed"
   ];
-
   const statusColors = {
     "Not Inspected": "bg-red-100 text-red-600",
     "Approval Pending": "bg-blue-100 text-blue-600",
@@ -46,7 +44,13 @@ const Dashboard = () => {
     "Completed (Not Closed)": "bg-purple-100 text-purple-600",
     "Completed (Closed)": "bg-green-100 text-green-600",
   };
-
+  const statusTextColors = {
+  "Not Inspected": "text-red-600",
+  "Approval Pending": "text-blue-600",
+  "In Progress": "text-yellow-600",
+  "Completed": "text-purple-600",
+  "Closed": "text-green-600",
+};
   useEffect(() => {
     const q = query(collection(db, "jobs"));
     const unsub = onSnapshot(q, (snapshot) => {
@@ -200,72 +204,86 @@ const Dashboard = () => {
           </p>
         </div>
 
-        {/* Status Cards */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3 mb-6">
-          {statusLabels.map((status) => (
-            <div
-              key={status}
-              className={`rounded-md p-4 text-center text-base font-semibold shadow-sm ${statusColors[status]}`}
-            >
-              <div>{status}</div>
-              <div className="text-2xl font-bold mt-1">{countByStatus[status]}</div>
-            </div>
-          ))}
-        </div>
+      {/* Status Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 md:grid-cols-5 gap-4 mt-6">
+        {Object.entries(countByStatus).map(([status, count]) => (
+          <div key={status} className={`rounded-xl p-4 text-center text-base font-semibold shadow-sm ${statusColors[status]}`}>
+            <h4>{status}</h4>
+            <p className="text-2xl font-bold mt-1">{count}</p>
+          </div>
+        ))}
+      </div>
+    </div>
 
-        {/* Filters */}
-        <div className="flex flex-wrap gap-4 items-center mb-6">
-          <input
-            type="text"
-            placeholder="Search by Customer Name or Job ID"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="border rounded px-3 py-2 w-full md:w-1/3"
-          />
-          <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="border px-2 py-1 rounded" />
-          <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className="border px-2 py-1 rounded" />
-          <select value={filter} onChange={(e) => setFilter(e.target.value)} className="border px-2 py-1 rounded">
+    {/* Filters */}
+    <div className="max-w-screen-2xl mx-auto mt-5 px-4">
+      <h2 className="text-xl font-bold text-gray-800 mb-4">Open Jobs</h2>
+
+      <div className="flex flex-col sm:flex-wrap sm:flex-row gap-4 mb-6 justify-between items-start sm:items-center">
+        <input
+          type="text"
+          placeholder="Search by Customer Name or Job ID"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="w-full sm:w-100 border border-gray-300 px-3 py-1 rounded rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-400 transition"
+        />
+        <div className="flex flex-col sm:flex-wrap sm:flex-row gap-4 justify-end items-start sm:items-center">
+        <div className="flex flex-row gap-4 w-full sm:w-auto">
+          <label className="text-sm text-gray-600 flex items-center gap-2">
+            Start:
+            <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="border border-gray-300 px-3 py-1 rounded rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-400 transition cursor-pointer" />
+          </label>
+          <label className="text-sm text-gray-600 flex items-center gap-2">
+            End:
+            <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className="border border-gray-300 px-3 py-1 rounded rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-400 transition cursor-pointer" />
+          </label>
+          </div>
+          <div className="flex flex-row gap-4 w-full sm:w-auto">
+          <select value={filter} onChange={(e) => setFilter(e.target.value)} className="border border-gray-300 px-3 py-1 rounded-lg text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-400 transition cursor-pointer">
             <option value="all">All Open</option>
             {statusLabels.map((s) => (
               <option key={s} value={s}>{s}</option>
             ))}
           </select>
-          <button onClick={handleExportCSV} className="bg-green-600 text-white px-4 py-1 rounded hover:bg-green-700 cursor-pointer">
+          <button onClick={handleExportCSV} className="bg-green-600 text-white px-4 py-1 rounded-lg shadow hover:bg-green-700 transition cursor-pointer">
             Export CSV
           </button>
         </div>
+        </div>
+      </div>
 
-        {/* Table */}
-        <div className="overflow-x-auto shadow rounded-lg">
-          <table className="min-w-full table-auto bg-white border text-sm">
-            <thead className="bg-gray-100 text-left">
-              <tr>
-                <th className="p-2 border">Job ID</th>
-                <th className="p-2 border">Customer Name</th>
-                <th className="p-2 border">POC</th>
-                <th className="p-2 border">Phone</th>
-                <th className="p-2 border">Engineer</th>
-                <th className="p-2 border">Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {currentJobs.map((job) => {
-                const displayStatus =
-                  job.status === "Completed"
-                    ? job.closedAt
-                      ? "Completed (Closed)"
-                      : "Completed (Not Closed)"
-                    : job.status;
+      {/* Table */}
+      <div className="overflow-x-auto rounded-xl border shadow-sm bg-white">
+        <table className="min-w-full text-sm text-left text-gray-700">
+          <thead className="bg-gray-100 uppercase text-md text-gray-500 uppercase">
+            <tr className="bg-gray-100 text-left">
+              <th className="p-3 border">Job ID</th>
+              <th className="p-3 border">Customer Name</th>
+              <th className="p-3 border">POC</th>
+              <th className="p-3 border">Phone</th>
+              <th className="p-3 border">Engineer</th>
+              <th className="p-3 border">Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {currentJobs.map((job) => {
                 return (
                   <tr key={job.id}>
-                    <td className="p-2 border text-blue-600 underline cursor-pointer" onClick={() => setModalJob(job)}>{job.jobid || job.id}</td>
-                    <td className="p-2 border">{job.customerName || "-"}</td>
-                    <td className="p-2 border">{job.poc || "-"}</td>
-                    <td className="p-2 border">{job.phone || job.customerId || "-"}</td>
-                    <td className="p-2 border">{job.engineer || "-"}</td>
-                    <td className="p-2 border">
-                      <span className={`px-2 py-1 rounded-full font-medium ${statusColors[displayStatus] || "bg-gray-200 text-gray-800"}`}>
-                        {displayStatus}
+                    <td className="p-3 border">
+                    <span
+                      className="text-blue-600 hover:text-blue-800 font-medium transition underline cursor-pointer"
+                      onClick={() => setModalJob(job)}
+                    >
+                      {job.jobid || job.id}
+                    </span>
+                  </td>
+                    <td className="p-3 border">{job.customerName || "-"}</td>
+                    <td className="p-3 border">{job.poc || "-"}</td>
+                    <td className="p-3 border">{job.phone || job.customerId || "-"}</td>
+                    <td className="p-3 border">{job.engineer || "-"}</td>
+                    <td className="p-3 border">
+                      <span className={`font-medium ${statusTextColors[job.status] || 'text-gray-700'}`}>
+                        {job.status}
                       </span>
                     </td>
                   </tr>
@@ -273,131 +291,190 @@ const Dashboard = () => {
               })}
               {currentJobs.length === 0 && (
                 <tr>
-                  <td colSpan="6" className="p-4 text-center text-gray-500">
+                  <td colSpan="6" className="p-4 text-center text-gray-400 italic">
                     No jobs found.
                   </td>
                 </tr>
               )}
-            </tbody>
-          </table>
-        </div>
-
-        {/* Pagination */}
-        <div className="flex justify-center mt-4 space-x-1">
-          {[...Array(totalPages)].map((_, i) => (
-            <button
-              key={i + 1}
-              onClick={() => setCurrentPage(i + 1)}
-              className={`px-3 py-1 rounded ${currentPage === i + 1 ? "bg-orange-600 text-white" : "bg-gray-200 text-gray-700"}`}
-            >
-              {i + 1}
-            </button>
-          ))}
-        </div>
+          </tbody>
+        </table>
       </div>
 
-      {/* Job Details Modal */}
-      {modalJob && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center backdrop-blur">
-          <div className="bg-white p-6 rounded-lg max-w-lg w-full shadow-lg border border-gray-300 relative">
-            <button
-              onClick={() => setModalJob(null)}
-              className="absolute top-2 right-2 text-3xl text-gray-500 hover:text-red-600 font-bold cursor-pointer"
-            >
-              &times;
-            </button>
-            <h3 className="text-2xl font-bold mb-4">Job Details</h3>
-            <div className="space-y-2 text-sm text-gray-800">
-              <p><strong>Job ID:</strong> {modalJob.jobid || modalJob.id}</p>
-              <p><strong>Customer:</strong> {modalJob.customerName}</p>
-              <p><strong>Engineer:</strong> {modalJob.engineer}</p>
-              <p><strong>POC:</strong> {modalJob.poc}</p>
-              <p><strong>Phone:</strong> {modalJob.phone}</p>
-              <p><strong>Status:</strong> {modalJob.status}</p>
-            </div>
-
-            {role !== "engineer" && modalJob.status === "Completed" && !modalJob.closedAt && (
-              <div className="mt-4 flex gap-2">
-                <button onClick={() => window.location.href = `/edit-job/${modalJob.id}`} className="bg-blue-600 text-white px-4 py-2 rounded">
-                  Edit Job
-                </button>
-                <button onClick={() => initiateCloseCall(modalJob)} className="bg-red-600 text-white px-4 py-2 rounded">
-                  Close Call
-                </button>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* Claim Modal */}
-      {claimStep && modalJob && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center backdrop-blur">
-          <div className="bg-white p-6 rounded-lg max-w-lg w-full shadow-lg border border-gray-300 relative">
-            <button
-              onClick={() => setClaimStep(false)}
-              className="absolute top-2 right-2 text-3xl text-gray-500 hover:text-red-600 font-bold cursor-pointer"
-            >
-              &times;
-            </button>
-            <h3 className="text-xl font-bold mb-4 text-gray-800">Any claim for this job?</h3>
-            <div className="space-y-4 text-sm text-gray-700">
-              <div className="flex gap-4">
-                <button
-                  className={`px-4 py-1 rounded cursor-pointer ${hasClaim === true ? "bg-blue-600 text-white" : "bg-gray-200"}`}
-                  onClick={() => setHasClaim(true)}
-                >
-                  Yes
-                </button>
-                <button
-                  className={`px-4 py-1 rounded cursor-pointer ${hasClaim === false ? "bg-blue-600 text-white" : "bg-gray-200"}`}
-                  onClick={() => setHasClaim(false)}
-                >
-                  No
-                </button>
-              </div>
-              {hasClaim !== null && (
-                <div className="space-y-2">
-                  <input
-                    type="text"
-                    placeholder="Invoice Number"
-                    value={claimDetails.invoiceNo}
-                    onChange={(e) => setClaimDetails({ ...claimDetails, invoiceNo: e.target.value })}
-                    className="w-full border px-3 py-1 rounded"
-                  />
-                  {hasClaim && (
-                    <>
-                      <input
-                        type="text"
-                        placeholder="Principal's Name"
-                        value={claimDetails.principal}
-                        onChange={(e) => setClaimDetails({ ...claimDetails, principal: e.target.value })}
-                        className="w-full border px-3 py-1 rounded"
-                      />
-                      <textarea
-                        placeholder="Claim Details"
-                        value={claimDetails.details}
-                        onChange={(e) => setClaimDetails({ ...claimDetails, details: e.target.value })}
-                        className="w-full border px-3 py-1 rounded"
-                      />
-                    </>
-                  )}
-                </div>
-              )}
-              <div className="flex justify-end pt-2">
-                <button
-                  onClick={confirmCloseCall}
-                  className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded"
-                >
-                  Close Call
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Pagination */}
+      <div className="flex justify-center mt-5 gap-2">
+      {[...Array(totalPages).keys()].map(i => (
+        <button
+          key={i + 1}
+          onClick={() => setCurrentPage(i + 1)}
+          className={`px-4 py-1 rounded-md border transition font-medium cursor-pointer ${
+            currentPage === i + 1
+              ? 'bg-blue-600 text-white shadow'
+              : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-100'
+          }`}
+        >
+          {i + 1}
+        </button>
+      ))}
     </div>
-  );
-};
+    </div>
 
-export default Dashboard;
+    {/* Job Modal */}
+    {modalJob && (
+      <div className="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-sm px-2">
+        <div className="bg-white rounded-2xl w-full max-w-xl p-6 sm:p-8 shadow-xl relative">
+          <button
+            onClick={() => setModalJob(null)}
+            className="absolute top-2 right-2 text-3xl text-gray-500 hover:text-red-600 font-bold cursor-pointer"
+            aria-label="Close Modal"
+          >
+            &times;
+          </button>
+          <h3 className="text-lg font-bold text-gray-700 border-b pb-1 mb-3">Job Details</h3>
+          <div className="space-y-6 text-md text-gray-800">
+            <div>
+              <p><strong>Job ID: </strong> {modalJob.jobid || modalJob.id}</p>
+              <p><strong>Date: </strong> {formatDate(modalJob.jdate)}</p>
+              <p><strong>Location of Service: </strong> {modalJob.loc}</p>
+            </div>
+            <div>
+              <h4 className="text-lg font-bold text-gray-700 border-b pb-1 mb-3">Customer Details</h4>
+              {modalJob.gstin && <p><strong>GSTIN:</strong> {modalJob.gstin}</p>}
+              <p><strong>Name: </strong> {modalJob.customerName}</p>
+              <p><strong>POC: </strong> {modalJob.poc}</p>
+              <p><strong>Phone: </strong> {modalJob.phone || modalJob.customerId}</p>
+              <p><strong>City: </strong> {modalJob.city}</p>
+            </div>
+            <div>
+              <h4 className="text-lg font-bold text-gray-700 border-b pb-1 mb-3">Machine Details</h4>
+              <p><strong>Brand: </strong> {modalJob.brand}</p>
+              <p><strong>Model: </strong> {modalJob.model}</p>
+              <p><strong>Serial No: </strong> {modalJob.serialNo}</p>
+              <p><strong>Call Status: </strong> {modalJob.callStatus || '-'}</p>
+            </div>
+            <div>
+              <h4 className="text-lg font-bold text-gray-700 border-b pb-1 mb-3">Complaint & Assignment</h4>
+              <p><strong>Description: </strong> {modalJob.description || '-'}</p>
+              <p><strong>Engineer: </strong> {modalJob.engineer || '-'}</p>
+              <p><strong>Status: </strong> {modalJob.status}</p>
+            {modalJob.notes && (
+                <p><strong>Remarks: </strong>{modalJob.notes}</p>
+            )}
+            {modalJob.spares && (
+                  <p><strong>Spares Used: </strong>{modalJob.spares}</p>
+              )}
+              {modalJob.charges && (
+                  <p><strong>Charges: </strong>₹{modalJob.charges}</p>
+              )}
+              </div>
+          </div>
+          {role !== "engineer" && (
+            <div className="mt-4 flex gap-2">
+              <button onClick={() => window.location.href = `/edit-job/${modalJob.id}`} className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition cursor-pointer">
+                Edit Job
+              </button>
+              <button onClick={() => initiateCloseCall(modalJob)} className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium transition cursor-pointer">
+                Close Call
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+    )}
+
+    {/* Claim Modal */}
+    {claimStep && modalJob && (
+  <div className="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-sm px-2">
+    <div className="bg-white rounded-2xl w-full max-w-xl p-6 sm:p-8 shadow-xl relative">
+      <button
+        onClick={() => setClaimStep(false)}
+        className="absolute top-2 right-2 text-3xl text-gray-500 hover:text-red-600 font-bold cursor-pointer"
+        aria-label="Close Claim Modal"
+      >
+        &times;
+      </button>
+      <h3 className="text-xl font-bold mb-4 text-gray-800">Any claim for this job?</h3>
+
+      <div className="space-y-4 text-md text-gray-700">
+        {/* YES / NO Buttons */}
+        <div className="flex gap-4">
+          <button
+            className={`px-4 py-1 rounded cursor-pointer ${hasClaim === true ? 'bg-blue-600 text-white' : 'bg-gray-200'}`}
+            onClick={() => setHasClaim(true)}
+          >
+            Yes
+          </button>
+          <button
+            className={`px-4 py-1 rounded cursor-pointer ${hasClaim === false ? 'bg-blue-600 text-white' : 'bg-gray-200'}`}
+            onClick={() => setHasClaim(false)}
+          >
+            No
+          </button>
+        </div>
+
+        {/* Conditional Claim Fields */}
+        {!hasClaim && (
+          <>
+          <label>Invoice Number: </label>
+          <input
+            type="text"
+            value={claimDetails.invoiceNo || ''}
+            onChange={(e) =>
+              setClaimDetails({ ...claimDetails, invoiceNo: e.target.value })
+            }
+            className="w-full border border-gray-300 px-3 py-1 rounded rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-400 transition"
+          />
+          </>
+        )}
+        {hasClaim && (
+          <>
+            <div>
+              <label>Invoice Number: </label>
+              <input
+                type="text"
+                value={claimDetails.invoiceNo || ''}
+                onChange={(e) =>
+                  setClaimDetails({ ...claimDetails, invoiceNo: e.target.value })
+                }
+                className="w-full border border-gray-300 px-3 py-1 rounded rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-400 transition"
+              />
+            </div>
+            <div>
+              <label>Principal's Name: <span className="text-red-500">*</span></label>
+              <input
+                type="text"
+                value={claimDetails.principal}
+                onChange={(e) =>
+                  setClaimDetails({ ...claimDetails, principal: e.target.value })
+                }
+                className="w-full border border-gray-300 px-3 py-1 rounded rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-400 transition"
+              />
+            </div>
+            <div>
+              <label>Claim Details: <span className="text-red-500">*</span></label>
+              <textarea
+                value={claimDetails.details}
+                onChange={(e) =>
+                  setClaimDetails({ ...claimDetails, details: e.target.value })
+                }
+                className="w-full border border-gray-300 rounded-lg px-4 py-2 mt-1 focus:ring-2 focus:ring-blue-400 transition resize-none"
+              />
+            </div>
+          </>
+        )}
+
+        {/* Submit */}
+        <div className="flex justify-end pt-4">
+          <button
+            onClick={confirmCloseCall}
+            className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded cursor-pointer"
+          >
+            Close Call
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+)}
+  </div>
+);
+}

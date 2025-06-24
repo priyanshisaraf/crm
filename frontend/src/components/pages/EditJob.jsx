@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import NavBar from "../layouts/NavBar";
 import {
   collection,
   query,
@@ -100,10 +101,12 @@ export default function EditJob() {
   }
 
   return (
-  <div className="min-h-screen bg-gray-100">
+    <div className="min-h-screen bg-gray-100">
+        <NavBar />
+        <div className="max-w-screen-2xl mx-auto px-4">
     <form
       onSubmit={handleSubmit}
-      className="bg-white shadow-md rounded px-8 pt-6 pb-8 mb-6 max-w-3xl mx-auto mt-10 space-y-8"
+      className="bg-white shadow-md rounded px-8 pt-6 pb-8 mb-6 max-w-3xl mx-auto mt-6 space-y-8"
     >
       <h2 className="text-2xl font-bold text-gray-800">Edit Job</h2>
 
@@ -233,6 +236,7 @@ export default function EditJob() {
         </button>
       </div>
     </form>
+  </div>
   </div>
 );
 }

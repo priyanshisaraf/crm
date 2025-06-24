@@ -59,51 +59,52 @@ export default function AddUser() {
 
   return (
     <div className="flex flex-col items-center bg-gray-50 px-4 py-8">
-      <div className="w-full max-w-md bg-white p-6 rounded-xl shadow">
-        <h2 className="text-2xl font-semibold text-center text-purple-700 mb-4">
-          Add New User
-        </h2>
+      <div className="w-full max-w-lg mx-auto bg-white p-6 sm:p-8 rounded-2xl shadow-md">
+  <h2 className="text-2xl font-bold text-blue-600 text-center mb-6">Add New User</h2>
 
-        <form onSubmit={handleAddUser} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              User Email
-            </label>
-            <input
-              type="email"
-              className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-            />
-          </div>
+  <form onSubmit={handleAddUser} className="space-y-5">
+    <div>
+      <label className="block text-sm font-medium text-gray-700 mb-1">
+        User Email
+      </label>
+      <input
+        type="email"
+        value={email}
+        onChange={(e) => setEmail(e.target.value)}
+        required
+        className="w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-600 focus:outline-none"
+        placeholder="user@example.com"
+      />
+    </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Role
-            </label>
-            <select
-              className="w-full p-2 border border-gray-300 rounded-md"
-              value={userRole}
-              onChange={(e) => setUserRole(e.target.value)}
-            >
-              {availableRoles.map((r) => (
-                <option key={r} value={r}>{r.charAt(0).toUpperCase() + r.slice(1)}</option>
-              ))}
-            </select>
-          </div>
+    <div>
+      <label className="block text-sm font-medium text-gray-700 mb-1">
+        Role
+      </label>
+      <select
+        value={userRole}
+        onChange={(e) => setUserRole(e.target.value)}
+        className="w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
+      >
+        {availableRoles.map((r) => (
+          <option key={r} value={r}>
+            {r.charAt(0).toUpperCase() + r.slice(1)}
+          </option>
+        ))}
+      </select>
+    </div>
 
-          {error && <p className="text-sm text-red-600">{error}</p>}
-          {success && <p className="text-sm text-green-600">{success}</p>}
+    {error && <p className="text-sm text-red-600">{error}</p>}
+    {success && <p className="text-sm text-green-600">{success}</p>}
 
-          <button
-            type="submit"
-            className="w-full bg-purple-700 text-white py-2 rounded hover:bg-purple-800"
-          >
-            Add User
-          </button>
-        </form>
-      </div>
+    <button
+      type="submit"
+      className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-lg font-medium transition cursor-pointer shadow-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2"
+    >
+      Add User
+    </button>
+  </form>
+</div>
     </div>
   );
 }

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import NavBar from '../layouts/NavBar';
 import {
   collection,
   query,
@@ -136,6 +137,8 @@ export default function CreateJob() {
   };
   return (
     <div className="min-h-screen bg-gray-100">
+          <NavBar />
+          <div className="max-w-screen-2xl mx-auto px-4 py-6">
       <form
         onSubmit={handleSubmit}
         className="bg-white shadow-md rounded px-8 pt-6 pb-8 mb-6 max-w-3xl mx-auto space-y-8"
@@ -319,6 +322,7 @@ export default function CreateJob() {
         </button>
         </div>
       </form>
+    </div>
     </div>
   );
 }
