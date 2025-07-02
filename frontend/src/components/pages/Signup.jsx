@@ -23,44 +23,48 @@ export default function Signup() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
 
-  const handleSignup = async (e) => {
-    e.preventDefault();
-    setError("");
+const handleSignup = async (e) => {
+  e.preventDefault();
+  setError("");
 
-    try {
-      const q = query(
-        collection(db, "users"),
-        where("email", "==", email),
-        where("isRegistered", "==", false)
-      );
-      const snapshot = await getDocs(q);
+  try {
+    const q = query(
+      collection(db, "users"),
+      where("email", "==", email),
+      where("isRegistered", "==", false)
+    );
+    const snapshot = await getDocs(q);
 
-      if (snapshot.empty) {
-        setError("Unauthorized or already registered.");
-        return;
-      }
-
-      const preApprovedDoc = snapshot.docs[0];
-      const role = preApprovedDoc.data().role;
-
-      const userCred = await createUserWithEmailAndPassword(auth, email, password);
-      const userDocRef = doc(db, "users", userCred.user.uid);
-
-      await setDoc(userDocRef, {
-        uid: userCred.user.uid,
-        email: userCred.user.email,
-        isRegistered: true,
-        role,
-      }, { merge: true });
-
-      await userCred.user.getIdToken(true);
-      window.location.href = "/dashboard";
-
-    } catch (err) {
-      console.error("Signup error:", err);
-      setError("Signup failed. Please try again.");
+    if (snapshot.empty) {
+      setError("Unauthorized or already registered.");
+      return;
     }
-  };
+
+    const preApprovedDoc = snapshot.docs[0];
+    const preData = preApprovedDoc.data();
+    const { role, name } = preData;  // ✅ extract name and role
+
+    const userCred = await createUserWithEmailAndPassword(auth, email, password);
+    const userDocRef = doc(db, "users", userCred.user.uid);
+
+    await setDoc(userDocRef, {
+      uid: userCred.user.uid,
+      email: userCred.user.email,
+      name: name || "", // fallback if name is missing
+      isRegistered: true,
+      role,
+    }, { merge: true });
+
+    await deleteDoc(preApprovedDoc.ref);
+    await userCred.user.getIdToken(true);
+    window.location.href = "/dashboard";
+
+  } catch (err) {
+    console.error("Signup error:", err);
+    setError("Signup failed. Please try again.");
+  }
+};
+
 
   const handleGoogleSignIn = async () => {
     try {
@@ -82,15 +86,26 @@ export default function Signup() {
       }
 
       const preApprovedDoc = snapshot.docs[0];
-      const role = preApprovedDoc.data().role;
+      const { role, name } = preApprovedDoc.data();
+
+await setDoc(doc(db, "users", result.user.uid), {
+  uid: result.user.uid,
+  email: result.user.email,
+  name: name || result.user.displayName || "",
+  isRegistered: true,
+  role,
+});
+
 
       const userDocRef = doc(db, "users", result.user.uid);
       await setDoc(userDocRef, {
-        uid: result.user.uid,
-        email: result.user.email,
-        isRegistered: true,
-        role,
-      });
+      uid: result.user.uid,
+      email: result.user.email,
+      name: result.user.displayName || "", // fallback in case it's missing
+      isRegistered: true,
+      role,
+    });
+
 
       // Delete pre-approved entry to avoid duplicates
       await deleteDoc(preApprovedDoc.ref);

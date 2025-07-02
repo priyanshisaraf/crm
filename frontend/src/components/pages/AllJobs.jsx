@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { collection, getDocs, query, where } from 'firebase/firestore';
+import { collection, getDocs, query, where, doc, updateDoc } from 'firebase/firestore';
 import { db } from '../../firebase/firebaseConfig';
 import Navbar from '../layouts/NavBar';
+import { useAuth } from '../../context/AuthContext';
+import { useNavigate } from 'react-router-dom'; 
 
 export default function AllJobs() {
   const [loadingJobs, setLoadingJobs] = useState(true);
@@ -14,110 +16,136 @@ export default function AllJobs() {
   const [endDate, setEndDate] = useState('');
   const [showClosedOnly, setShowClosedOnly] = useState(false);
   const [engineerOptions, setEngineerOptions] = useState([]);
+  const [engineerMap, setEngineerMap] = useState({});
   const [currentPage, setCurrentPage] = useState(1);
-  const jobsPerPage = 50;
+  const [editFields, setEditFields] = useState({ notes: '', charges: '', spares: '' });
 
-    const formatDate = (dateStr) => {
+  const jobsPerPage = 50;
+  const { currentUser, role } = useAuth();
+
+  const formatDate = (dateStr) => {
     if (!dateStr) return '-';
     const date = new Date(dateStr);
-    const dd = String(date.getDate()).padStart(2, '0');
-    const mm = String(date.getMonth() + 1).padStart(2, '0');
-    const yyyy = date.getFullYear();
-    return `${dd}-${mm}-${yyyy}`;
+    return date.toLocaleDateString('en-GB');
   };
-const formatTimestamp = (timestamp) => {
-  if (!timestamp?.seconds) return '-';
-  const date = new Date(timestamp.seconds * 1000);
-  const dd = String(date.getDate()).padStart(2, '0');
-  const mm = String(date.getMonth() + 1).padStart(2, '0');
-  const yyyy = date.getFullYear();
-  return `${dd}-${mm}-${yyyy}`;
+  const navigate = useNavigate();
+  const formatTimestamp = (timestamp) => {
+    if (!timestamp?.seconds) return '-';
+    const date = new Date(timestamp.seconds * 1000);
+    return date.toLocaleDateString('en-GB');
+  };
+const handleEditJobClick = () => {
+    if (modalJob?.id) {
+      navigate(`/edit-job/${modalJob.id}`); // ✅ NEW: Redirect to edit-job page
+    }
+  };
+
+  const statusTextColors = {
+    "Not Inspected": "text-red-600",
+    "Approval Pending": "text-blue-600",
+    "In Progress": "text-yellow-600",
+    "Completed": "text-purple-600",
+    "Closed": "text-green-600",
+  };
+
+  const handleSaveEdit = async () => {
+  if (!modalJob?.id) return;
+
+  const jobRef = doc(db, "jobs", modalJob.id);
+  const updateData = {
+    notes: editFields.notes,
+    charges: editFields.charges,
+    spares: editFields.spares,
+    editedBy: currentUser.email,
+    editedAt: new Date(),
+  };
+
+  try {
+    await updateDoc(jobRef, updateData);
+    alert('✅ Changes saved.');
+    setJobs(prevJobs =>
+  prevJobs.map(j =>
+    j.id === modalJob.id ? { ...j, ...updateData } : j
+  )
+);
+    setModalJob(null);
+  } catch (err) {
+    console.error("Failed to update job:", err);
+    alert("❌ Update failed.");
+  }
 };
-const statusTextColors = {
-  "Not Inspected": "text-red-600",
-  "Approval Pending": "text-blue-600",
-  "In Progress": "text-yellow-600",
-  "Completed": "text-purple-600",
-  "Closed": "text-green-600",
-};
+
 
   useEffect(() => {
     const fetchEngineers = async () => {
-  setLoadingEngineers(true);
-  const q = query(
-    collection(db, 'users'),
-    where('role', '==', 'engineer'),
-    where('isRegistered', '==', true)
-  );
-  const snapshot = await getDocs(q);
-  const emails = snapshot.docs.map(doc => doc.data().email);
-  setEngineerOptions(emails);
-  setLoadingEngineers(false);
-};
+      setLoadingEngineers(true);
+      const q = query(collection(db, 'users'), where('role', '==', 'engineer'), where('isRegistered', '==', true));
+      const snapshot = await getDocs(q);
+      const options = [], map = {};
+      snapshot.forEach(doc => {
+        const { email, name } = doc.data();
+        if (email && name) {
+          options.push({ email, name });
+          map[email] = name;
+        }
+      });
+      setEngineerOptions(options);
+      setEngineerMap(map);
+      setLoadingEngineers(false);
+    };
     fetchEngineers();
   }, []);
 
-
   useEffect(() => {
     const fetchJobs = async () => {
-  setLoadingJobs(true);
-  const q = query(collection(db, "jobs"));
-  const snapshot = await getDocs(q);
-  const list = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-  setJobs(list);
-  setLoadingJobs(false);
-};
+      setLoadingJobs(true);
+      const q = query(collection(db, "jobs"));
+      const snapshot = await getDocs(q);
+      const list = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      setJobs(list);
+      setLoadingJobs(false);
+    };
     fetchJobs();
   }, []);
-
-    const filteredJobs = jobs.filter(job => {
-  const jobDate = job.jdate ? new Date(job.jdate) : null;
-  const start = startDate ? new Date(startDate) : null;
-  const end = endDate ? new Date(endDate + 'T23:59:59') : null;
-
-  return (
-    (!engineerFilter || (job.engineer || '').toLowerCase() === engineerFilter.toLowerCase()) &&
-    (!statusFilter || job.status === statusFilter) &&
-    (!start || (jobDate && jobDate >= start)) &&
-    (!end || (jobDate && jobDate <= end)) &&
-    (!showClosedOnly || job.closedAt)
-  );
-});
-  const indexOfLastJob = currentPage * jobsPerPage;
-const indexOfFirstJob = indexOfLastJob - jobsPerPage;
-const currentJobs = filteredJobs.slice(indexOfFirstJob, indexOfLastJob);
-
-  const handleExportCSV = () => {
+  useEffect(() => {
+    if (modalJob) {
+      setEditFields({
+        notes: modalJob.notes || '',
+        charges: modalJob.charges || '',
+        spares: modalJob.spares || ''
+      });
+    }
+  }, [modalJob]);
+const handleExportCSV = () => {
   const headers = [
-  "Job ID",
-  "Date",
-  "Customer Name",
-  "POC",
-  "Phone",
-  "Engineer",
-  "City",
-  "Brand",
-  "Model",
-  "Serial No",
-  "Call Status",
-  "Complaint/Description",
-  "Status",
-  "Completed On",
-  "Remarks",
-  "Spares",
-  "Service Charges",
-  "Invoice No",
-  "Closed On"
-];
+    "Job ID", "Date", "Customer Name", "POC", "Phone", "Engineers", "City", "Brand", "Model",
+    "Serial No", "Call Status", "Complaint/Description", "Status", "Completed On",
+    "Remarks", "Spares", "Service Charges", "Principal's Name", "Claim Details",
+    "Invoice No", "Closed On"
+  ];
 
+  const rows = filteredJobs.map(job => {
+    const notes = job.notes != null ? job.notes : '-';
+const spares = job.spares != null ? job.spares : '-';
+const charges = job.charges?.toString().trim() || '-';
+const principal = job.claim?.principal?.toString().trim() || '-';
+const claimDetails = job.claim?.details?.toString().trim() || '-';
+const formatCell = (value) => {
+  if (value === null || value === undefined) return '""';
+  const str = String(value).replace(/"/g, '""'); // Escape quotes
+  return `"${str}"`; // Wrap in quotes
+};
 
-  const rows = filteredJobs.map(job => [
-    job.jobid || job.id,
+    console.log(job.charges || '-');
+    return [
+      job.jobid || job.id,
     formatDate(job.jdate) || '-',
     job.customerName || '-',
     job.poc || '-',
     job.phone || '-',
-    job.engineer || '-',
+    Array.isArray(job.engineers)
+      ? job.engineers.map(e => engineerMap[e] || e).join('; ')
+      : (engineerMap[job.engineer] || job.engineer || '-'),
     job.city || '-',
     job.brand || '-',
     job.model || '-',
@@ -126,13 +154,16 @@ const currentJobs = filteredJobs.slice(indexOfFirstJob, indexOfLastJob);
     job.description || job.complaint || '-',
     job.status || '-',
     job.completedOn ? formatTimestamp(job.completedOn) : '-',
-    job.notes || '-',         
-    job.spares || '-',
-    job.charges || '-',
+    notes,
+    spares,
+    charges,                              
+    principal,
+    claimDetails,                
     job.invoiceNo || '-',
     job.closedAt ? formatTimestamp(job.closedAt) : '-',
-  ]);
-
+    ].map(formatCell);
+  });
+  
   const csvContent = [headers, ...rows].map(e => e.join(",")).join("\n");
   const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
   const link = document.createElement("a");
@@ -144,12 +175,30 @@ const currentJobs = filteredJobs.slice(indexOfFirstJob, indexOfLastJob);
   link.download = fileName;
   link.click();
 };
-return (
-  <div className="min-h-screen bg-gray-100">
-    <Navbar />
 
-    <div className="max-w-screen-2xl mx-auto px-4 py-6">
-      <h1 className="text-2xl font-bold mb-6 text-gray-800">All Jobs - Full History</h1>
+
+  const filteredJobs = jobs.filter(job => {
+    const jobDate = job.jdate ? new Date(job.jdate) : null;
+    const start = startDate ? new Date(startDate) : null;
+    const end = endDate ? new Date(endDate + 'T23:59:59') : null;
+    return (
+      (!engineerFilter || (Array.isArray(job.engineers) ? job.engineers.includes(engineerFilter) : job.engineer === engineerFilter)) &&
+      (!statusFilter || job.status === statusFilter) &&
+      (!start || (jobDate && jobDate >= start)) &&
+      (!end || (jobDate && jobDate <= end)) &&
+      (!showClosedOnly || job.closedAt)
+    );
+  });
+
+  const indexOfLastJob = currentPage * jobsPerPage;
+  const indexOfFirstJob = indexOfLastJob - jobsPerPage;
+  const currentJobs = filteredJobs.slice(indexOfFirstJob, indexOfLastJob);
+
+  return (
+    <div className="min-h-screen bg-gray-100">
+      <Navbar />
+      <div className="max-w-screen-2xl mx-auto px-4 py-6">
+        <h1 className="text-2xl font-bold mb-6 text-gray-800">All Jobs - Full History</h1>
 
       {/* Filters */}
 <fieldset
@@ -186,13 +235,11 @@ return (
           value={engineerFilter}
           onChange={(e) => setEngineerFilter(e.target.value)}
           className="w-full sm:w-auto border border-gray-300 px-3 py-1 rounded-lg text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-400 transition cursor-pointer"
-        >
-          <option value="">All Engineers</option>
-          {engineerOptions.map((email, idx) => (
-            <option key={idx} value={email}>{email}</option>
+        ><option value="">All Engineers</option>
+          {engineerOptions.map((eng, idx) => (
+            <option key={idx} value={eng.email}>{eng.name}</option>
           ))}
         </select>
-
         <select
           value={statusFilter}
           onChange={(e) => setStatusFilter(e.target.value)}
@@ -242,7 +289,7 @@ return (
               <th className="p-3 border">Customer</th>
               <th className="p-3 border">POC</th>
               <th className="p-3 border">Phone</th>
-              <th className="p-3 border">Engineer</th>
+              <th className="p-3 border">Engineers</th>
               <th className="p-3 border">Status</th>
               <th className="p-3 border">Completed On</th>
               <th className="p-3 border">Closed On</th>
@@ -263,7 +310,11 @@ return (
                 <td className="p-3 border">{job.customerName || '-'}</td>
                 <td className="p-3 border">{job.poc || '-'}</td>
                 <td className="p-3 border">{job.phone || '-'}</td>
-                <td className="p-3 border">{job.engineer || '-'}</td>
+                <td className="p-3 border">
+                  {Array.isArray(job.engineers)
+                    ? job.engineers.map(email => engineerMap[email] || email).join(', ')
+                    : (engineerMap[job.engineer] || job.engineer || '-')}
+                </td>
                 <td className="p-3 border">
                   <span className={`font-medium ${statusTextColors[job.status] || 'text-gray-700'}`}>
                     {job.status}
@@ -339,16 +390,80 @@ return (
             <div>
               <h4 className="text-lg font-bold text-gray-700 border-b pb-1 mb-3">Complaint & Assignment</h4>
               <p><strong>Description: </strong> {modalJob.description || '-'}</p>
-              <p><strong>Engineer: </strong> {modalJob.engineer || '-'}</p>
+              <p><strong>Engineers: </strong> {
+                Array.isArray(modalJob.engineers)
+                  ? modalJob.engineers.map(email => engineerMap[email] || email).join(', ')
+                  : (engineerMap[modalJob.engineer] || modalJob.engineer || '-')
+              }</p>
               <p><strong>Status: </strong> {modalJob.status}</p>
               {modalJob.notes && <p><strong>Remarks: </strong>{modalJob.notes}</p>}
               {modalJob.spares && <p><strong>Spares Used: </strong>{modalJob.spares}</p>}
               {modalJob.charges && <p><strong>Charges: </strong>₹{modalJob.charges}</p>}
-            </div>
-          </div>
+            
+              <div className="space-y-6 mt-4">
+  {role !== "engineer" && (
+    <button
+      onClick={handleEditJobClick}
+      className="bg-blue-600 text-white px-3 py-1.5 rounded shadow hover:bg-blue-700 font-medium transition cursor-pointer"
+    >
+      Edit Job
+    </button>
+  )}
+
+  {role !== "engineer" &&
+    modalJob.status?.toLowerCase() === "completed" &&
+    modalJob.closedAt && (
+      <div className="space-y-4">
+        <div>
+          <label className="block font-medium">Edit Remarks:</label>
+          <textarea
+            className="w-full border rounded p-1"
+            value={editFields.notes}
+            onChange={(e) =>
+              setEditFields((prev) => ({ ...prev, notes: e.target.value }))
+            }
+          />
+        </div>
+
+        <div>
+          <label className="block font-medium">Edit Spares:</label>
+          <textarea
+            className="w-full border rounded p-1"
+            value={editFields.spares}
+            onChange={(e) =>
+              setEditFields((prev) => ({ ...prev, spares: e.target.value }))
+            }
+          />
+        </div>
+
+        <div>
+          <label className="block font-medium">Edit Charges:</label>
+          <input
+            type="number"
+            className="w-full border rounded p-1"
+            value={editFields.charges}
+            onChange={(e) =>
+              setEditFields((prev) => ({ ...prev, charges: e.target.value }))
+            }
+          />
+        </div>
+
+        <div className="flex justify-end">
+          <button
+            onClick={handleSaveEdit}
+            className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
+          >
+            Save Changes
+          </button>
         </div>
       </div>
     )}
-  </div>
-);
+</div>
+          </div>
+        </div>
+        </div>
+        </div>
+      )}
+    </div>
+  );
 }

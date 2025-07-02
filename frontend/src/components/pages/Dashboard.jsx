@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useAuth } from "../../context/AuthContext";
 import Navbar from "../layouts/NavBar";
 import { db } from "../../firebase/firebaseConfig";
-import { collection, serverTimestamp, onSnapshot, query, updateDoc, doc } from "firebase/firestore";
+import { collection, serverTimestamp, onSnapshot, query, updateDoc, doc, where, getDocs } from "firebase/firestore";
 
 export default function Dashboard() {
   const { currentUser, role } = useAuth();
@@ -19,9 +19,30 @@ export default function Dashboard() {
   const [claimDetails, setClaimDetails] = useState({
     principal: "",
     details: "",
-    settled: false,
-    remarks: "",
   });
+  const [engineerMap, setEngineerMap] = useState({});
+  useEffect(() => {
+  const fetchEngineerNames = async () => {
+    try {
+      const q = query(
+        collection(db, "users"),
+        where("role", "==", "engineer"),
+        where("isRegistered", "==", true)
+      );
+      const snapshot = await getDocs(q);
+      const map = {};
+      snapshot.forEach(doc => {
+        const { email, name } = doc.data();
+        map[email] = name;
+      });
+      setEngineerMap(map);
+    } catch (err) {
+      console.error("Failed to fetch engineer names:", err);
+    }
+  };
+  fetchEngineerNames();
+}, []);
+
   const formatDate = (dateStr) => {
     if (!dateStr) return '-';
     const date = new Date(dateStr);
@@ -34,7 +55,8 @@ export default function Dashboard() {
     "Not Inspected",
     "Approval Pending",
     "In Progress",
-    "Completed"
+    "Completed",
+    
   ];
   const statusColors = {
     "Not Inspected": "bg-red-100 text-red-600",
@@ -101,23 +123,33 @@ export default function Dashboard() {
   });
 
   const handleExportCSV = () => {
-    const headers = ["Job ID", "Customer Name", "Phone", "Engineer", "Status"];
-    const rows = filteredJobs.map(job => [job.id, job.customerName || '', job.phone || job.customerId || '', job.engineer, job.status]);
-    const csvContent = [headers, ...rows].map(e => e.join(",")).join("\n");
-    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.setAttribute("href", url);
-    const fileName = `jobs_export_${filter.replace(/\s+/g, '_').toLowerCase()}.csv`;
-    link.setAttribute("download", fileName);
-    link.click();
-  };
+  const headers = ["Job ID", "Customer Name", "Phone", "Engineers", "Status"];
+
+  const rows = filteredJobs.map(job => [
+    job.id,
+    job.customerName || '',
+    job.phone || job.customerId || '',
+    Array.isArray(job.engineers)
+      ? job.engineers.map(e => engineerMap[e] || e).join(', ')
+      : (engineerMap[job.engineer] || job.engineer || '-'),
+    job.status
+  ]);
+
+  const csvContent = [headers, ...rows].map(e => e.join(",")).join("\n");
+  const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.setAttribute("href", url);
+  const fileName = `jobs_export_${filter.replace(/\s+/g, '_').toLowerCase()}.csv`;
+  link.setAttribute("download", fileName);
+  link.click();
+};
 
   const initiateCloseCall = (job) => {
     setModalJob(job);
     setClaimStep(true);
     setHasClaim(null);
-    setClaimDetails({ principal: '', details: '', settled: false, remarks: '' });
+    setClaimDetails({ principal: '', details: ''});
   };
 
   const confirmCloseCall = async () => {
@@ -143,8 +175,6 @@ export default function Dashboard() {
         claim: {
           principal: claimDetails.principal,
           details: claimDetails.details,
-          settled: claimDetails.settled,
-          remarks: claimDetails.remarks,
         }
       })
     };
@@ -159,11 +189,14 @@ export default function Dashboard() {
   }
 };
 
-
-
+const sortedJobs = [...filteredJobs].sort((a, b) => {
+  const idA = a.jobid || a.id;
+  const idB = b.jobid || b.id;
+  return idB.localeCompare(idA, undefined, { numeric: true, sensitivity: 'base' });
+});
   const indexOfLastJob = currentPage * jobsPerPage;
   const indexOfFirstJob = indexOfLastJob - jobsPerPage;
-  const currentJobs = filteredJobs.slice(indexOfFirstJob, indexOfLastJob);
+  const currentJobs = sortedJobs.slice(indexOfFirstJob, indexOfLastJob);
   const totalPages = Math.ceil(filteredJobs.length / jobsPerPage);
 
   return (
@@ -255,7 +288,11 @@ export default function Dashboard() {
                     <td className="p-3 border">{job.customerName || "-"}</td>
                     <td className="p-3 border">{job.poc || "-"}</td>
                     <td className="p-3 border">{job.phone || job.customerId || "-"}</td>
-                    <td className="p-3 border">{job.engineer || "-"}</td>
+                    <td className="p-3 border">
+                      {Array.isArray(job.engineers)
+                        ? job.engineers.map(email => engineerMap[email] || email).join(', ')
+                        : engineerMap[job.engineer] || job.engineer || "-"}
+                    </td>
                     <td className="p-3 border">
                       <span className={`font-medium ${statusTextColors[job.status] || 'text-gray-700'}`}>
                         {job.status}
@@ -323,13 +360,15 @@ export default function Dashboard() {
               <h4 className="text-lg font-bold text-gray-700 border-b pb-1 mb-3">Machine Details</h4>
               <p><strong>Brand: </strong> {modalJob.brand}</p>
               <p><strong>Model: </strong> {modalJob.model}</p>
-              <p><strong>Serial No: </strong> {modalJob.serialNo}</p>
+              {modalJob.serialNo && <p><strong>Serial No: </strong> {modalJob.serialNo}</p>}
               <p><strong>Call Status: </strong> {modalJob.callStatus || '-'}</p>
             </div>
             <div>
               <h4 className="text-lg font-bold text-gray-700 border-b pb-1 mb-3">Complaint & Assignment</h4>
               <p><strong>Description: </strong> {modalJob.description || '-'}</p>
-              <p><strong>Engineer: </strong> {modalJob.engineer || '-'}</p>
+              <p><strong>Engineer: </strong> {Array.isArray(modalJob.engineers)
+    ? modalJob.engineers.map(email => engineerMap[email] || email).join(', ')
+    : engineerMap[modalJob.engineer] || modalJob.engineer || "-"}</p>
               <p><strong>Status: </strong> {modalJob.status}</p>
             {modalJob.notes && (
                 <p><strong>Remarks: </strong>{modalJob.notes}</p>
@@ -344,10 +383,10 @@ export default function Dashboard() {
           </div>
           {role !== "engineer" && (
             <div className="mt-4 flex gap-2">
-              <button onClick={() => window.location.href = `/edit-job/${modalJob.id}`} className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition cursor-pointer">
+              <button onClick={() => window.location.href = `/edit-job/${modalJob.id}`} className="bg-blue-600 text-white px-3 py-1.5 rounded shadow hover:bg-blue-700 font-medium transition cursor-pointer">
                 Edit Job
               </button>
-              <button onClick={() => initiateCloseCall(modalJob)} className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium transition cursor-pointer">
+              <button onClick={() => initiateCloseCall(modalJob)} className="text-white px-3 py-1.5 rounded shadow bg-red-600 hover:bg-red-700 font-medium transition cursor-pointer">
                 Close Call
               </button>
             </div>

@@ -35,6 +35,29 @@ export default function CustomerDetails() {
   "Completed": "text-purple-600",
   "Closed": "text-green-600",
 };
+const [engineerMap, setEngineerMap] = useState({});
+const [loadingEngineers, setLoadingEngineers] = useState(true);
+
+useEffect(() => {
+  const fetchEngineers = async () => {
+    setLoadingEngineers(true);
+    const q = query(
+      collection(db, 'users'),
+      where('role', '==', 'engineer'),
+      where('isRegistered', '==', true)
+    );
+    const snapshot = await getDocs(q);
+    const map = {};
+    snapshot.forEach(doc => {
+      const { email, name } = doc.data();
+      if (email && name) map[email] = name;
+    });
+    setEngineerMap(map);
+    setLoadingEngineers(false);
+  };
+  fetchEngineers();
+}, []);
+
   // Fetch customer by customerName (document ID)
   useEffect(() => {
     async function fetchCustomer() {
@@ -71,15 +94,26 @@ export default function CustomerDetails() {
     { label: "POC", key: "poc" },
     { label: "Phone", key: "phone" },
     { label: "City", key: "city" },
-    { label: "Engineer", key: "engineer" },
+    { label: "Engineers", key: "engineersDisplay" },
     { label: "Status", key: "status" },
     { label: "Created On", key: "jdate" }
   ];
 
-  const jobsWithFormattedDate = jobs.map((j) => ({
+const jobsWithFormattedDate = jobs.map((j) => {
+  let engineersDisplay = '-';
+
+  if (Array.isArray(j.engineers)) {
+    engineersDisplay = j.engineers.map(e => engineerMap[e] || e).join('; ');
+  } else if (j.engineer) {
+    engineersDisplay = engineerMap[j.engineer] || j.engineer;
+  }
+
+  return {
     ...j,
-    createdAtStr: j.createdAt?.toDate?.().toLocaleDateString?.() || ""
-  }));
+    createdAtStr: j.createdAt?.toDate?.().toLocaleDateString?.() || "",
+    engineersDisplay,
+  };
+});
 
   return (
     <div className="min-h-screen bg-gray-100">
@@ -114,7 +148,7 @@ export default function CustomerDetails() {
         <th className="p-3 border">POC</th>
         <th className="p-3 border">Phone</th>
         <th className="p-3 border">City</th>
-        <th className="p-3 border">Engineer</th>
+        <th className="p-3 border">Engineers</th>
         <th className="p-3 border">Status</th>
         <th className="p-3 border">Created On</th>
         <th className="p-3 border">Completed On</th>
@@ -122,13 +156,13 @@ export default function CustomerDetails() {
       </tr>
     </thead>
     <tbody>
-      {loadingJobs ? (
+      {loadingJobs || loadingEngineers ? (
   <tr>
     <td colSpan="10" className="p-4 text-center text-gray-400 italic">
       Loading jobs...
     </td>
   </tr>
-          ) : jobs.length === 0 ? (
+) : jobs.length === 0 ? (
             <tr>
               <td colSpan="10" className="p-4 text-center text-gray-400 italic">
                 No jobs found for this customer.
@@ -149,7 +183,11 @@ export default function CustomerDetails() {
             <td className="p-3 border">{job.poc}</td>
             <td className="p-3 border">{job.phone}</td>
             <td className="p-3 border">{job.city}</td>
-            <td className="p-3 border">{job.engineer}</td>
+            <td className="p-3 border">
+              {Array.isArray(job.engineers)
+                ? job.engineers.map(e => engineerMap[e] || e).join(', ')
+                : (engineerMap[job.engineer] || job.engineer || '-')}
+            </td>
             <td className="p-3 border">
               <span className={`font-medium ${statusTextColors[job.status] || 'text-gray-700'}`}>
                 {job.status}
@@ -206,7 +244,11 @@ export default function CustomerDetails() {
               <div>
                 <h4 className="text-lg font-bold text-gray-700 border-b pb-1 mb-3">Complaint & Assignment</h4>
                 <p><strong>Description: </strong> {modalJob.description || '-'}</p>
-                <p><strong>Engineer: </strong> {modalJob.engineer || '-'}</p>
+                <p><strong>Engineers: </strong> {
+                  Array.isArray(modalJob.engineers)
+                    ? modalJob.engineers.map(e => engineerMap[e] || e).join(', ')
+                    : (engineerMap[modalJob.engineer] || modalJob.engineer || '-')
+                }</p>
                 <p><strong>Status: </strong> {modalJob.status}</p>
               {modalJob.notes && (
                   <p><strong>Remarks: </strong>{modalJob.notes}</p>

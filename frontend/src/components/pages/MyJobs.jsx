@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
-import { collection, query, where, onSnapshot, doc, updateDoc } from "firebase/firestore";
+import { collection, query, where, onSnapshot, doc, updateDoc, getDocs } from "firebase/firestore";
 import { db } from '../../firebase/firebaseConfig';
 import { useAuth } from '../../context/AuthContext';
 import { Timestamp } from "firebase/firestore";
@@ -19,7 +19,28 @@ const MyJobs = () => {
     const yyyy = date.getFullYear();
     return `${dd}-${mm}-${yyyy}`;
   };
-  
+  const [engineerMap, setEngineerMap] = useState({});
+
+useEffect(() => {
+  const fetchEngineerMap = async () => {
+    const q = query(collection(db, 'users'), where('role', '==', 'engineer'));
+    const snapshot = await getDocs(q);
+    const map = {};
+    snapshot.forEach(doc => {
+      const { email, name } = doc.data();
+      map[email] = name;
+    });
+    setEngineerMap(map);
+  };
+  fetchEngineerMap();
+}, []);
+const getEngineerNames = (job) => {
+  if (Array.isArray(job.engineers)) {
+    return job.engineers.map(e => engineerMap[e] || e).join(', ');
+  }
+  return engineerMap[job.engineer] || job.engineer || '-';
+};
+
   const handleSaveJob = async (job) => {
     try {
       const jobRef = doc(db, "jobs", job.id);
@@ -35,21 +56,43 @@ const MyJobs = () => {
     }
   };
 
-  useEffect(() => {
-    if (!currentUser?.email) return;
+useEffect(() => {
+  if (!currentUser?.uid) return;
 
-    const q = query(
-      collection(db, "jobs"),
-      where("engineer", "==", currentUser.email)
-    );
+  const fetchJobs = async () => {
+    try {
+      // Get the user's name from Firestore using UID
+      const userQuery = query(
+        collection(db, "users"),
+        where("uid", "==", currentUser.uid)
+      );
+      const userSnap = await getDocs(userQuery);
 
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const jobList = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      setJobs(jobList);
-    });
+      if (userSnap.empty) {
+        console.error("No user document found for current UID.");
+        return;
+      }
+      const userEmail = userSnap.docs[0].data().email;
+      //Query jobs where `engineers` array contains the user's email
+      const jobsQuery = query(
+        collection(db, "jobs"),
+        where("engineers", "array-contains", userEmail)
+      );
+      const unsubscribe = onSnapshot(jobsQuery, (snapshot) => {
+        const jobList = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        setJobs(jobList);
+      });
 
-    return () => unsubscribe();
-  }, [currentUser]);
+      return unsubscribe;
+    } catch (error) {
+      console.error("Error fetching jobs:", error);
+    }
+  };
+
+  fetchJobs();
+}, [currentUser]);
+
+
 const headingStyle = {
   marginBottom: '8px',
   fontSize: '1em',
@@ -174,7 +217,7 @@ const headingStyle = {
               <div className="flex flex-wrap gap-x-8 gap-y-1">
                 <p><strong>Brand:</strong> {job.brand}</p>
                 <p><strong>Model:</strong> {job.model}</p>
-                <p><strong>Serial No:</strong> {job.serialNo}</p>
+                {job.serialNo && <p><strong>Serial No:</strong> {job.serialNo}</p>}
                 <p><strong>Call Status:</strong> {job.callStatus || "N/A"}</p>
               </div>
             </div>
@@ -189,7 +232,7 @@ const headingStyle = {
                 }`}>Complaint & Assignment</h2>
               <div className="gap-x-8 gap-y-1">
                 <p><strong>Complaint:</strong> {job.complaint || "-"}</p>
-                <p><strong>Assigned Engineer:</strong> {job.engineer}</p>
+                <p><strong>Assigned Engineer:</strong> {getEngineerNames(job)}</p>
               </div>
             </div>
             {/* Editable Fields */}
@@ -228,7 +271,9 @@ const headingStyle = {
 
               <label className="block font-medium mt-2">Service Charges:</label>
               <input
-                type="text"
+               type="number"
+                step="0.01"
+                min="0"
                 value={job.charges || ""}
                 onChange={(e) => updateField(job.id, "charges", e.target.value)}
                 className="border p-1 w-full rounded"
@@ -308,7 +353,7 @@ const headingStyle = {
                   <h3 style={headingStyle}>Machine Information</h3>
                   <p><strong>Brand:</strong> {job.brand}</p>
                   <p><strong>Model:</strong> {job.model}</p>
-                  <p><strong>Serial No:</strong> {job.serialNo}</p>
+                  {job.serialNo && <p><strong>Serial No:</strong> {job.serialNo}</p>}
                   <p><strong>Call Status:</strong> {job.callStatus || 'N/A'}</p>
                 </div>
 
@@ -316,8 +361,8 @@ const headingStyle = {
                 <div style={{ marginBottom: '10px' }}>
                   <h3 style={headingStyle}>Service Report</h3>
                   <p><strong>Complaint:</strong> {job.complaint || '-'}</p>
-                  <p><strong>Engineer:</strong> {job.engineer}</p>
-                  <p><strong>Spares Used:</strong> {job.spares || '-'}</p>
+                  <p><strong>Engineers:</strong> {getEngineerNames(job)}</p>
+                  <p><strong>Spares Replaced:</strong> {job.spares || '-'}</p>
                   <p><strong>Service Charges:</strong> ₹ {job.charges || '0.00'} <small>(GST extra if applicable)</small></p>
                 </div>
 

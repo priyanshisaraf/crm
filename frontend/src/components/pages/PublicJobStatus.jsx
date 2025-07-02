@@ -45,11 +45,9 @@ export default function PublicJobStatus() {
       <div className="max-w-xl mx-auto bg-white p-6 rounded shadow">
         <h2 className="text-xl font-bold mb-4 text-gray-800">Repair Status</h2>
         <p><strong>Job ID:</strong> {job.jobid || job.id}</p>
-        <p><strong>Customer:</strong> {job.customerName}</p>
-        <p><strong>POC:</strong> {job.poc}</p>
         <p><strong>Machine Brand:</strong> {job.brand}</p>
         <p><strong>Machine Model:</strong> {job.model}</p>
-        <p><strong>Serial No:</strong> {job.serialNo}</p>
+        {job.serialNo && <p><strong>Serial No:</strong> {job.serialNo}</p>}
         <p><strong>Status:</strong> <span className="font-semibold text-blue-600">{job.status}</span></p>
         {job.closedAt && (
           <p><strong>Closed On:</strong> {new Date(job.closedAt.seconds * 1000).toLocaleDateString()}</p>

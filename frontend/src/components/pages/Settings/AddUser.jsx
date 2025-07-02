@@ -12,6 +12,7 @@ export default function AddUser() {
   const [userRole, setUserRole] = useState("engineer");
   const [success, setSuccess] = useState("");
   const [error, setError] = useState("");
+  const [name, setName] = useState("");
 
   if (role !== "owner" && role !== "coordinator") {
     navigate("/unauthorized");
@@ -19,38 +20,41 @@ export default function AddUser() {
   }
 
   const handleAddUser = async (e) => {
-    e.preventDefault();
-    setError("");
-    setSuccess("");
+  e.preventDefault();
+  setError("");
+  setSuccess("");
 
-    // Coordinator cannot add coordinators or owners
-    if (role === "coordinator" && userRole !== "engineer") {
-      setError("You are only allowed to add engineers.");
+  // Coordinator cannot add coordinators or owners
+  if (role === "coordinator" && userRole !== "engineer") {
+    setError("You are only allowed to add engineers.");
+    return;
+  }
+
+  try {
+    const q = query(collection(db, "users"), where("email", "==", email));
+    const snapshot = await getDocs(q);
+    if (!snapshot.empty) {
+      setError("User already exists.");
       return;
     }
 
-    try {
-      const q = query(collection(db, "users"), where("email", "==", email));
-      const snapshot = await getDocs(q);
-      if (!snapshot.empty) {
-        setError("User already exists.");
-        return;
-      }
+    // Use auto-generated document ID
+    await setDoc(doc(collection(db, "users")), {
+      email: email.trim(),
+      name: name.trim(),
+      role: userRole,
+      isRegistered: false,
+    });
 
-      await setDoc(doc(collection(db, "users")), {
-        email,
-        role: userRole,
-        isRegistered: false,
-      });
-
-      setSuccess("User added successfully.");
-      setEmail("");
-      setUserRole("engineer");
-    } catch (err) {
-      console.error(err);
-      setError("Failed to add user.");
-    }
-  };
+    setSuccess("User added successfully.");
+    setEmail("");
+    setName("");
+    setUserRole("engineer");
+  } catch (err) {
+    console.error(err);
+    setError("Failed to add user.");
+  }
+};
 
   // Dynamic role options
   const availableRoles = role === "owner"
@@ -63,6 +67,19 @@ export default function AddUser() {
   <h2 className="text-2xl font-bold text-blue-600 text-center mb-6">Add New User</h2>
 
   <form onSubmit={handleAddUser} className="space-y-5">
+    <div>
+    <label className="block text-sm font-medium text-gray-700 mb-1">
+      Full Name
+    </label>
+    <input
+      type="text"
+      value={name}
+      onChange={(e) => setName(e.target.value)}
+      required
+      className="w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-600 focus:outline-none"
+      placeholder="John Doe"
+    />
+  </div>
     <div>
       <label className="block text-sm font-medium text-gray-700 mb-1">
         User Email
