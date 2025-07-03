@@ -19,19 +19,19 @@ A full-featured **Customer Relationship Management (CRM)** web application built
 ## UI Previews
 
 ### Login Page
-![Login Page](docs/screens/login.png)
+![Login Page](frontend/docs/screens/login.png)
 
 ### Dashboard (Owner)
-![Dashboard](docs/screens/dashboard.png)
+![Dashboard](frontend/docs/screens/dashboard.png)
 
 ### My Jobs Panel (Engineer)
-![My Jobs](docs/screens/myjobs.png)
+![My Jobs](frontend/docs/screens/myjobs.png)
 
 ### Create Job (Owner, Coordinator)
-![Create Job](docs/screens/createjob.png)
+![Create Job](frontend/docs/screens/createjob.png)
 
 ### Downloadable PDF Report
-![PDF Report](docs/screens/pdfreport.png)
+![PDF Report](frontend/docs/screens/pdfreport.png)
 
 ---
 
