@@ -19,7 +19,7 @@ A full-featured **Customer Relationship Management (CRM)** web application built
 ## UI Previews
 
 ### Login Page
-![Login Page](frontend/docs/screens/login.png)
+<img src="frontend/docs/screens/login.png" alt="Login Page" height="600"/>
 
 ### Dashboard (Owner)
 ![Dashboard](frontend/docs/screens/dashboard.png)
@@ -27,11 +27,11 @@ A full-featured **Customer Relationship Management (CRM)** web application built
 ### My Jobs Panel (Engineer)
 ![My Jobs](frontend/docs/screens/myjobs.png)
 
-### Create Job (Owner, Coordinator)
-![Create Job](frontend/docs/screens/createjob.png)
+### Create Job Form (Owner, Coordinator)
+<img src="frontend/docs/screens/createjob.png" alt="Create Job Form" height="600"/>
 
 ### Downloadable PDF Report
-![PDF Report](frontend/docs/screens/pdfreport.png)
+<img src="frontend/docs/screens/pdfreport.png" alt="PDF Report" height="600"/>
 
 ---
 
