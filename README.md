@@ -6,12 +6,13 @@ A full-featured **Customer Relationship Management (CRM)** web application built
 
 ## Features
 
-- **Authentication** – Role-based access using Firebase Auth (Engineer/Admin)
+- **Authentication** – Role-based access using Firebase Auth (Owner/Coordinator/Engineer)
 - **Job Management** – Assign, track, and update jobs with real-time sync
 - **PDF Reports** – Generate service job reports dynamically
-- **Search & Filter** – Quickly find jobs by status
+- **Search & Filter** – Quickly find jobs by status or search quickly by ID or customer
 - **Mobile Responsive** – Optimized UI/UX across all devices
 - **Spare Tracking** – Record parts/spares used per job
+- **Public Job Status Links** - Shareable read-only URL to view the job status – ideal for clients and stakeholders.
 - **Cloud Hosted** – Deployed on Firebase Hosting
 
 ---
