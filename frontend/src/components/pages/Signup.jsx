@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import {  Link } from "react-router-dom";
+import { EyeIcon, EyeSlashIcon } from "@heroicons/react/24/outline";
 import {
   createUserWithEmailAndPassword,
   signOut,
@@ -64,7 +65,7 @@ const handleSignup = async (e) => {
     setError("Signup failed. Please try again.");
   }
 };
-
+const [showPassword, setShowPassword] = useState(false);
 
   const handleGoogleSignIn = async () => {
     try {
@@ -140,18 +141,26 @@ await setDoc(doc(db, "users", result.user.uid), {
               required
             />
           </div>
-
-          <div>
+          <div className="relative">
             <label className="block text-sm font-medium text-gray-600 mb-1">Password</label>
             <input
-              type="password"
+              type={showPassword ? "text" : "password"}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:outline-none"
+              className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:outline-none pr-10"
               required
             />
+            <div
+              onClick={() => setShowPassword(!showPassword)}
+              className="absolute right-3 top-[38px] cursor-pointer text-gray-500"
+            >
+              {showPassword ? (
+                <EyeSlashIcon className="h-5 w-5" />
+              ) : (
+                <EyeIcon className="h-5 w-5" />
+              )}
+            </div>
           </div>
-
           {error && (
             <p className="text-sm text-red-600 bg-red-50 border border-red-200 px-3 py-2 rounded-md">
               ⚠ {error}

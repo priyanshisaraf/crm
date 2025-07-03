@@ -3,7 +3,7 @@ import { useNavigate, useLocation, Link } from "react-router-dom";
 import { signInWithEmailAndPassword, signInWithPopup, GoogleAuthProvider} from "firebase/auth";
 import { collection, query, where, getDocs } from "firebase/firestore";
 import { auth, db } from "../../firebase/firebaseConfig";
-
+import { EyeIcon, EyeSlashIcon } from "@heroicons/react/24/outline";
 import {
   setDoc,
   doc
@@ -14,7 +14,7 @@ export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
-
+  const [showPassword, setShowPassword] = useState(false);
   const handleLogin = async (e) => {
     e.preventDefault();
     setError("");
@@ -110,7 +110,7 @@ export default function Login() {
             />
           </div>
 
-          <div>
+          <div className="relative">
             <label className="block text-sm font-medium text-gray-600 mb-1">Password</label>
             <input
               type="password"
@@ -119,8 +119,17 @@ export default function Login() {
               className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:outline-none"
               required
             />
+            <div
+            onClick={() => setShowPassword(!showPassword)}
+            className="absolute right-3 top-[38px] cursor-pointer text-gray-500"
+          >
+            {showPassword ? (
+              <EyeSlashIcon className="h-5 w-5" />
+            ) : (
+              <EyeIcon className="h-5 w-5" />
+            )}
           </div>
-
+          </div>
           {error && (
             <p className="text-sm text-red-600 bg-red-50 border border-red-200 px-3 py-2 rounded-md">
               ⚠ {error}
