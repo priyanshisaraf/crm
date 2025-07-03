@@ -79,7 +79,7 @@ useEffect(() => {
         where("engineers", "array-contains", userEmail)
       );
       const unsubscribe = onSnapshot(jobsQuery, (snapshot) => {
-        const jobList = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        const jobList = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })).filter(job => !job.closedAt);
         setJobs(jobList);
       });
 
@@ -131,7 +131,11 @@ const headingStyle = {
 
     const canvas = await html2canvas(element, { scale: 2 });
     const imgData = canvas.toDataURL('image/png');
-    const pdf = new jsPDF();
+    const pdf = new jsPDF({
+      orientation: 'portrait',
+      unit: 'px',
+      format: [canvas.width, canvas.height]
+    });
     const width = pdf.internal.pageSize.getWidth();
     const height = (canvas.height * width) / canvas.width;
     pdf.addImage(imgData, 'PNG', 0, 0, width, height);
@@ -231,7 +235,7 @@ const headingStyle = {
                   "text-red-700 focus:ring-2 focus:ring-red-800 transition"
                 }`}>Complaint & Assignment</h2>
               <div className="gap-x-8 gap-y-1">
-                <p><strong>Complaint:</strong> {job.complaint || "-"}</p>
+                <p className="break-words whitespace-pre-wrap"><strong>Complaint:</strong> {job.description || "-"}</p>
                 <p><strong>Assigned Engineer:</strong> {getEngineerNames(job)}</p>
               </div>
             </div>
@@ -295,22 +299,18 @@ const headingStyle = {
             </button>
             </div>
             {/* Hidden Printable PDF */}
-            <div id={`job-pdf-${job.id}`} style={{ display: "none" }}>
-              <div style={{
-                maxWidth: '100%',
-                margin: '0 auto',
-                padding: '10px',
+              <div id={`job-pdf-${job.id}`} style={{ display: "none" }}>
+                <div style={{
+                width: '100%',
+                padding: '16px',
                 fontFamily: 'Arial, sans-serif',
                 backgroundColor: '#fff',
-                paddingLeft: '10%',
-                paddingRight: '10%',
                 color: '#000',
-                fontSize: '10px',
+                fontSize: '12px',
                 lineHeight: '1.5',
                 border: '1px solid #ccc',
                 boxSizing: 'border-box'
               }}>
-
                 {/* Header with logo and title */}
                 <div style={{
                   display: 'flex',
@@ -323,7 +323,7 @@ const headingStyle = {
                   <img
                     src="/SE Logo.png"
                     alt="Company Logo"
-                    style={{ height: '40px' }}
+                    style={{ maxHeight: '40px', maxWidth: '100px', objectFit: 'contain' }}
                   />
                   <div style={{ fontSize: '1.2em', fontWeight: 'bold' }}>
                     Service Job Report
@@ -360,7 +360,9 @@ const headingStyle = {
                 {/* Service Report */}
                 <div style={{ marginBottom: '10px' }}>
                   <h3 style={headingStyle}>Service Report</h3>
-                  <p><strong>Complaint:</strong> {job.complaint || '-'}</p>
+                  <p style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
+                    <strong>Complaint:</strong> {job.description || '-'}
+                  </p>
                   <p><strong>Engineers:</strong> {getEngineerNames(job)}</p>
                   <p><strong>Spares Replaced:</strong> {job.spares || '-'}</p>
                   <p><strong>Service Charges:</strong> ₹ {job.charges || '0.00'} <small>(GST extra if applicable)</small></p>

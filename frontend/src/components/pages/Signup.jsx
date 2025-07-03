@@ -123,7 +123,7 @@ await setDoc(doc(db, "users", result.user.uid), {
   return (
     <div className="flex flex-col justify-center items-center min-h-screen bg-white px-4">
       <div className="flex flex-col items-center mb-6">
-        <img src="../../../public/SE Logo.png" alt="Logo" className="h-10" />
+        <img src="/SE Logo.png" alt="Logo" className="h-10" />
       </div>
 
       <div className="w-full max-w-md bg-white border border-gray-200 rounded-2xl shadow-md p-8">

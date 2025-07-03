@@ -11,7 +11,7 @@ export default function Navbar() {
       {/* Top Row: Logo */}
       <div className="flex items-center">
         <Link to="/">
-          <img src="../../../public/SE Logo.png" alt="Logo" className="h-10" />
+          <img src="/SE Logo.png" alt="Logo" className="h-10" />
         </Link>
       </div>
 
